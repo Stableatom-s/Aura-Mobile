@@ -5,48 +5,122 @@ import { ScreenState, JournalRecord, UserProfileData } from "@/types";
 import { StorageService } from "@/services/storage";
 import { BottomNavDock } from "@/components/common/BottomNavDock";
 
-// Modular Screens
+// Core Navigation Screens
 import { SplashView } from "@/screens/onboarding/SplashView";
+import { OnboardingView } from "@/screens/onboarding/OnboardingView";
+import { AuthView } from "@/screens/onboarding/AuthView";
+import { NameSetupView } from "@/screens/onboarding/NameSetupView";
+import { GenderSelectView } from "@/screens/onboarding/GenderSelectView";
 import { HomeView } from "@/screens/HomeView";
 import { ChatView } from "@/screens/ChatView";
 import { JournalView } from "@/screens/JournalView";
-import { MeditateView } from "@/screens/MeditateView";
 import { InsightsView } from "@/screens/InsightsView";
 import { ProfileView } from "@/screens/ProfileView";
+import { MeditateView } from "@/screens/MeditateView";
+import { ScreenTransition } from "@/components/common/ScreenTransition";
+
+// Profile Subviews & Feature Screens
+import { AppearanceView } from "@/screens/profile/AppearanceView";
+import { LanguageView } from "@/screens/profile/LanguageView";
+import { NotificationsView } from "@/screens/profile/NotificationsView";
+import { NotificationInboxView } from "@/screens/NotificationInboxView";
+import { PrivacyView } from "@/screens/profile/PrivacyView";
+import { ExportMemoriesView } from "@/screens/profile/ExportMemoriesView";
+import { DeleteMemoriesView } from "@/screens/profile/DeleteMemoriesView";
+import { SubscriptionView } from "@/screens/profile/SubscriptionView";
+import { HelpView } from "@/screens/profile/HelpView";
+import { AboutView } from "@/screens/profile/AboutView";
+import { TermsView } from "@/screens/profile/TermsView";
+import { VoiceModalView } from "@/screens/modals/VoiceModalView";
 
 export default function Index() {
   const [phase, setPhase] = useState<ScreenState>("splash");
-  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(
-    "Happy",
-  );
+  const [selectedEmotion, setSelectedEmotion] = useState<string | null>("Happy");
+  const [showVoiceModal, setShowVoiceModal] = useState<boolean>(false);
   const [profile, setProfile] = useState<UserProfileData>({
-    name: "Tanmay",
-    email: "tanmay@aura.ai",
-    gender: "man",
-    streak: 14,
-    sessions: 32,
-    memories: 68,
+    name: "User",
+    email: "",
+    gender: "",
+    streak: 1,
+    sessions: 0,
+    memories: 0,
     isPremium: false,
   });
   const [journals, setJournals] = useState<JournalRecord[]>([]);
 
-  const loadData = () => {
-    StorageService.getProfile().then(setProfile);
-    StorageService.getJournals().then(setJournals);
+  const loadData = async () => {
+    try {
+      const storedProfile = await StorageService.getProfile();
+      if (storedProfile && storedProfile.email) {
+        setProfile(storedProfile);
+      }
+      const storedJournals = await StorageService.getJournals();
+      if (storedJournals) {
+        setJournals(storedJournals);
+      }
+    } catch {
+      // Retain defaults if offline or clean install
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const isMainTab = ["home", "chat", "journal", "insights", "profile"].includes(
-    phase,
-  );
+  const handleAuthComplete = (email: string) => {
+    const updated = { ...profile, email };
+    setProfile(updated);
+    StorageService.saveProfile(updated);
+    setPhase("name-setup");
+  };
+
+  const handleNameComplete = (name: string) => {
+    const updated = { ...profile, name };
+    setProfile(updated);
+    StorageService.saveProfile(updated);
+    setPhase("gender-select");
+  };
+
+  const handleGenderComplete = (gender: string) => {
+    const updated = { ...profile, gender };
+    setProfile(updated);
+    StorageService.saveProfile(updated);
+    setPhase("home");
+  };
+
+  const isMainTab = ["home", "chat", "journal", "insights", "profile"].includes(phase);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.canvasContainer}>
       <View style={{ flex: 1 }}>
-        {phase === "splash" && <SplashView onNext={() => setPhase("home")} />}
+        {/* Onboarding Flow */}
+        {phase === "splash" && (
+          <SplashView onNext={() => setPhase("onboarding")} />
+        )}
+        {phase === "onboarding" && (
+          <OnboardingView onComplete={() => setPhase("auth")} />
+        )}
+        {phase === "auth" && (
+          <AuthView
+            onGoogleSignIn={handleAuthComplete}
+            onAppleSignIn={handleAuthComplete}
+            onGuestContinue={handleAuthComplete}
+          />
+        )}
+        {phase === "name-setup" && (
+          <NameSetupView
+            onBack={() => setPhase("auth")}
+            onNext={handleNameComplete}
+          />
+        )}
+        {phase === "gender-select" && (
+          <GenderSelectView
+            onBack={() => setPhase("name-setup")}
+            onComplete={handleGenderComplete}
+          />
+        )}
+
+        {/* 5 Primary Core Tabs */}
         {phase === "home" && (
           <HomeView
             userName={profile.name}
@@ -56,20 +130,67 @@ export default function Index() {
             onNavigate={setPhase}
           />
         )}
-        {phase === "chat" && <ChatView userMood={selectedEmotion} />}
+        {phase === "chat" && (
+          <ChatView userMood={selectedEmotion} />
+        )}
         {phase === "journal" && (
           <JournalView journals={journals} onRefreshJournals={loadData} />
         )}
-        {phase === "meditate" && (
-          <MeditateView onBack={() => setPhase("home")} />
+        {phase === "insights" && (
+          <InsightsView />
         )}
-        {phase === "insights" && <InsightsView />}
         {phase === "profile" && (
           <ProfileView profile={profile} onNavigate={setPhase} />
         )}
+
+        {/* Feature & Settings Sub-Screens */}
+        {phase === "meditate" && (
+          <MeditateView onBack={() => setPhase("home")} />
+        )}
+        {phase === "notification-inbox" && (
+          <NotificationInboxView onBack={() => setPhase("home")} />
+        )}
+        {phase === "appearance" && (
+          <AppearanceView onBack={() => setPhase("profile")} />
+        )}
+        {phase === "language" && (
+          <LanguageView onBack={() => setPhase("profile")} />
+        )}
+        {phase === "notifications" && (
+          <NotificationsView onBack={() => setPhase("profile")} />
+        )}
+        {phase === "privacy" && (
+          <PrivacyView onBack={() => setPhase("profile")} />
+        )}
+        {phase === "export-memories" && (
+          <ExportMemoriesView onBack={() => setPhase("profile")} />
+        )}
+        {phase === "delete-memories" && (
+          <DeleteMemoriesView onBack={() => setPhase("profile")} />
+        )}
+        {phase === "subscription" && (
+          <SubscriptionView
+            onBack={() => setPhase("profile")}
+            isPremium={profile.isPremium}
+          />
+        )}
+        {phase === "help" && (
+          <HelpView onBack={() => setPhase("profile")} />
+        )}
+        {phase === "about" && (
+          <AboutView onBack={() => setPhase("profile")} onNavigate={setPhase} />
+        )}
+        {phase === "terms" && (
+          <TermsView onBack={() => setPhase("profile")} />
+        )}
       </View>
 
-      {/* Persistent Bottom 5-Tab Bar */}
+      {/* Persistent Audio / Voice Overlay */}
+      {showVoiceModal && (
+        <VoiceModalView onClose={() => setShowVoiceModal(false)} />
+      )}
+
+      {/* Floating 5-Tab Bar */}
       {isMainTab && (
         <BottomNavDock activeScreen={phase} onNavigate={setPhase} />
       )}
@@ -78,7 +199,7 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  canvasContainer: {
     flex: 1,
     backgroundColor: Colors.background,
   },

@@ -14,6 +14,7 @@ export type ScreenState =
   | 'appearance'
   | 'language'
   | 'notifications'
+  | 'notification-inbox'
   | 'privacy'
   | 'export-memories'
   | 'delete-memories'
