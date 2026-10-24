@@ -9,8 +9,8 @@ export type ScreenState =
   | 'voice'
   | 'journal'
   | 'insights'
+  | 'profile'
   | 'meditate'
-  | 'subscription'
   | 'appearance'
   | 'language'
   | 'notifications'
@@ -18,10 +18,10 @@ export type ScreenState =
   | 'privacy'
   | 'export-memories'
   | 'delete-memories'
+  | 'subscription'
   | 'help'
   | 'about'
-  | 'terms'
-  | 'profile';
+  | 'terms';
 
 export interface EmotionItem {
   emoji: string;

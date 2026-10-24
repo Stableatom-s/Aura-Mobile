@@ -9,10 +9,15 @@ import {
 } from 'react-native';
 import { ChevronLeft, Check } from 'lucide-react-native';
 import { useLanguage } from '@/context/LanguageContext';
-import { LANGUAGES_LIST } from '@/constants/translations';
+import { LANGUAGES_LIST, SupportedLanguage } from '@/constants/translations';
 
 export function LanguageView({ onBack }: { onBack: () => void }) {
   const { language, setLanguage, t } = useLanguage();
+
+  const handleSelectLanguage = (code: SupportedLanguage) => {
+    console.log('[LanguageView] Selecting language:', code);
+    setLanguage(code);
+  };
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -20,7 +25,7 @@ export function LanguageView({ onBack }: { onBack: () => void }) {
         <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
           <ChevronLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>{t('menu_language')}</Text>
+        <Text style={styles.navTitle}>{t('menu_language') || 'Language'}</Text>
       </View>
 
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
@@ -33,7 +38,7 @@ export function LanguageView({ onBack }: { onBack: () => void }) {
               <TouchableOpacity
                 key={item.code}
                 style={[styles.langRow, !isLast && styles.rowDivider]}
-                onPress={() => setLanguage(item.code)}
+                onPress={() => handleSelectLanguage(item.code as SupportedLanguage)}
                 activeOpacity={0.75}
               >
                 <View>
