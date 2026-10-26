@@ -1,122 +1,325 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
-import { GlowingOrb } from '@/components/common/GlowingOrb';
+import React, { useEffect, useRef } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  SafeAreaView,
+  Linking,
+  Animated,
+  Easing,
+} from 'react-native';
+import Svg, {
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  RadialGradient,
+  Stop,
+  Circle,
+  Text as SvgText,
+} from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 
 interface AuthViewProps {
   onGoogleSignIn: (email: string) => void;
   onAppleSignIn: (email: string) => void;
-  onGuestContinue: (email: string) => void;
+  onGuestContinue?: (email: string) => void;
 }
 
-export function AuthView({ onGoogleSignIn, onAppleSignIn, onGuestContinue }: AuthViewProps) {
-  const [customEmail, setCustomEmail] = useState('');
+/* ─── Animated Atmospheric Orb ─── */
+function AnimatedLoginOrb() {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const haloOpacity = useRef(new Animated.Value(0.75)).current;
 
+  useEffect(() => {
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.14,
+            duration: 2400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 2400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(haloOpacity, {
+            toValue: 0.95,
+            duration: 2400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(haloOpacity, {
+            toValue: 0.65,
+            duration: 2400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    ).start();
+  }, [pulseAnim, haloOpacity]);
+
+  return (
+    <Animated.View
+      style={{
+        transform: [{ scale: pulseAnim }],
+        opacity: haloOpacity,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Svg width="124" height="124" viewBox="0 0 120 120">
+        <Defs>
+          <RadialGradient id="loginOrbHalo" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#C084FC" stopOpacity="0.85" />
+            <Stop offset="32%" stopColor="#818CF8" stopOpacity="0.5" />
+            <Stop offset="65%" stopColor="#4F46E5" stopOpacity="0.15" />
+            <Stop offset="100%" stopColor="#070814" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="loginOrbCore" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
+            <Stop offset="28%" stopColor="#F5D0FE" stopOpacity="0.95" />
+            <Stop offset="62%" stopColor="#A855F7" stopOpacity="0.85" />
+            <Stop offset="100%" stopColor="#6366F1" stopOpacity="0.2" />
+          </RadialGradient>
+        </Defs>
+
+        <Circle cx="60" cy="60" r="58" fill="url(#loginOrbHalo)" />
+        <Circle cx="60" cy="60" r="24" fill="url(#loginOrbCore)" />
+        <Circle cx="60" cy="60" r="7.5" fill="#FFFFFF" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/* ─── Animated Aura Logo ─── */
+function AnimatedAuraLogo() {
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0.85)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(floatAnim, {
+            toValue: -3,
+            duration: 2600,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(floatAnim, {
+            toValue: 2,
+            duration: 2600,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 2200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0.78,
+            duration: 2200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    ).start();
+  }, [floatAnim, glowAnim]);
+
+  return (
+    <Animated.View
+      style={{
+        transform: [{ translateY: floatAnim }],
+        opacity: glowAnim,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Svg width="160" height="48" viewBox="0 0 160 48">
+        <Defs>
+          <SvgLinearGradient id="auraLogoShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#A5B4FC" />
+            <Stop offset="45%" stopColor="#D8B4FE" />
+            <Stop offset="100%" stopColor="#F472B6" />
+          </SvgLinearGradient>
+        </Defs>
+        <SvgText
+          x="80"
+          y="36"
+          fill="url(#auraLogoShimmer)"
+          fontSize="40"
+          fontWeight="900"
+          textAnchor="middle"
+          letterSpacing="-0.5"
+        >
+          Aura
+        </SvgText>
+      </Svg>
+    </Animated.View>
+  );
+}
+
+export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
   const handleGoogle = () => {
-    // In production, this comes from Google OAuth response (e.g., user.email)
-    const email = customEmail.trim() || 'user@gmail.com';
-    onGoogleSignIn(email);
+    onGoogleSignIn('user@gmail.com');
   };
 
   const handleApple = () => {
-    const email = customEmail.trim() || 'user@icloud.com';
-    onAppleSignIn(email);
+    onAppleSignIn('user@icloud.com');
   };
 
-  const handleGuest = () => {
-    onGuestContinue('guest@aura.ai');
+  const handleOpenTerms = () => {
+    Linking.openURL('https://aura.ai/terms');
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <GlowingOrb size={84} />
-        <Text style={styles.title}>Welcome to Aura</Text>
-        <Text style={styles.subtitle}>Your sanctuary for calm and self-reflection.</Text>
-      </View>
+    <SafeAreaView style={styles.safeContainer}>
+      <View style={styles.centerContainer}>
+        {/* ─── Animated Top Brand Section ─── */}
+        <View style={styles.brandBlock}>
+          <View style={styles.orbWrapper}>
+            <AnimatedLoginOrb />
+          </View>
 
-      <View style={styles.authGroup}>
-        {/* Optional Manual Email Entry for Sandbox/Testing */}
-        <TextInput
-          placeholder="Enter your email to test"
-          placeholderTextColor="rgba(255,255,255,0.3)"
-          value={customEmail}
-          onChangeText={setCustomEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          style={styles.emailInput}
-        />
+          <View style={styles.titleWrapper}>
+            <AnimatedAuraLogo />
+          </View>
 
-        {/* Google Sign In */}
-        <TouchableOpacity style={styles.socialBtn} onPress={handleGoogle}>
-          <Text style={styles.socialEmoji}>🌐</Text>
-          <Text style={styles.socialBtnText}>Continue with Google</Text>
-        </TouchableOpacity>
-
-        {/* Apple Sign In */}
-        <TouchableOpacity style={[styles.socialBtn, styles.appleBtn]} onPress={handleApple}>
-          <Text style={styles.socialEmoji}>🍎</Text>
-          <Text style={[styles.socialBtnText, { color: '#000000' }]}>Continue with Apple</Text>
-        </TouchableOpacity>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
+          <Text style={styles.subGreetingText}>
+            Welcome — let’s get started
+          </Text>
         </View>
 
-        {/* Guest Pass */}
-        <TouchableOpacity style={styles.guestBtn} onPress={handleGuest}>
-          <Text style={styles.guestBtnText}>Explore as Guest</Text>
-        </TouchableOpacity>
-      </View>
+        {/* ─── Translucent Glass Auth Buttons ─── */}
+        <View style={styles.buttonStack}>
+          {/* Continue with Google */}
+          <TouchableOpacity
+            style={styles.translucentGlassCard}
+            onPress={handleGoogle}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconSlot}>
+              <Ionicons name="logo-google" size={19} color="#FFFFFF" />
+            </View>
+            <Text style={styles.authButtonText}>Continue with Google</Text>
+          </TouchableOpacity>
 
-      <Text style={styles.termsDisclaimer}>
-        By continuing, you agree to Aura's Terms of Service & Privacy Policy.
-      </Text>
-    </View>
+          {/* Continue with Apple */}
+          <TouchableOpacity
+            style={styles.translucentGlassCard}
+            onPress={handleApple}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconSlot}>
+              <Ionicons name="logo-apple" size={19} color="#FFFFFF" />
+            </View>
+            <Text style={styles.authButtonText}>Continue with Apple</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ─── Legal Footer ─── */}
+        <View style={styles.legalFooter}>
+          <Text style={styles.legalNoticeText}>
+            By continuing, you agree to our{' '}
+            <Text style={styles.termsLink} onPress={handleOpenTerms}>
+              Terms & Privacy Policy
+            </Text>
+          </Text>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between', paddingVertical: 40 },
-  header: { alignItems: 'center', marginTop: 40 },
-  title: { fontSize: 28, fontWeight: '800', color: '#F8FAFC', marginTop: 24 },
-  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: 8 },
-  authGroup: { gap: 14, width: '100%' },
-  emailInput: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    fontSize: 14,
-    marginBottom: 4,
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#070814',
   },
-  socialBtn: {
-    flexDirection: 'row',
+  centerContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
+    justifyContent: 'center',
+  },
+  brandBlock: {
+    alignItems: 'center',
+    marginBottom: 44,
+  },
+  orbWrapper: {
+    marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 20,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
   },
-  appleBtn: { backgroundColor: '#FFFFFF' },
-  socialEmoji: { fontSize: 18 },
-  socialBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' },
-  dividerText: { color: 'rgba(255,255,255,0.3)', marginHorizontal: 12, fontSize: 12 },
-  guestBtn: { alignItems: 'center', paddingVertical: 12 },
-  guestBtnText: { color: '#818CF8', fontSize: 14, fontWeight: '600' },
-  termsDisclaimer: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 11,
+  titleWrapper: {
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  subGreetingText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.45)',
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+  buttonStack: {
+    gap: 14,
+    marginBottom: 38,
+  },
+  /* Translucent frosted glass effect */
+  translucentGlassCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 36, 60, 0.38)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.11)',
+    borderRadius: 22,
+    paddingVertical: 18,
+    paddingHorizontal: 22,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  iconSlot: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  appleEmoji: {
+    fontSize: 19,
+  },
+  authButtonText: {
+    color: '#F8FAFC',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  legalFooter: {
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  legalNoticeText: {
+    color: 'rgba(255, 255, 255, 0.36)',
+    fontSize: 12,
     textAlign: 'center',
-    paddingHorizontal: 16,
+    lineHeight: 18,
+  },
+  termsLink: {
+    color: '#4F46E5',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
