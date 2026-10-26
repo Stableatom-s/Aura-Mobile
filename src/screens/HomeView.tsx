@@ -11,6 +11,7 @@ import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { MessageSquare, Mic, BookOpen, Wind, Flame, TrendingUp } from 'lucide-react-native';
 import { GlowingOrb } from '@/components/common/GlowingOrb';
 import { ScreenState } from '@/types';
+import { useLanguage } from '@/context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 const EMOTION_GAP = 8;
@@ -18,21 +19,21 @@ const EMOTION_WIDTH = (width - 40 - EMOTION_GAP * 3) / 4;
 
 interface EmotionItem {
   id: string;
-  label: string;
+  labelKey: string;
   emoji: string;
   color: string;
   glowBg: string;
 }
 
 const EMOTIONS: EmotionItem[] = [
-  { id: 'Happy', label: 'Happy', emoji: '😊', color: '#10B981', glowBg: 'rgba(16, 185, 129, 0.16)' },
-  { id: 'Sad', label: 'Sad', emoji: '😔', color: '#60A5FA', glowBg: 'rgba(96, 165, 250, 0.16)' },
-  { id: 'Angry', label: 'Angry', emoji: '😡', color: '#EF4444', glowBg: 'rgba(239, 68, 68, 0.16)' },
-  { id: 'Calm', label: 'Calm', emoji: '😌', color: '#38BDF8', glowBg: 'rgba(56, 189, 248, 0.16)' },
-  { id: 'Anxious', label: 'Anxious', emoji: '😰', color: '#F59E0B', glowBg: 'rgba(245, 158, 11, 0.16)' },
-  { id: 'Tired', label: 'Tired', emoji: '🥱', color: '#A78BFA', glowBg: 'rgba(167, 139, 250, 0.16)' },
-  { id: 'Loved', label: 'Loved', emoji: '❤️', color: '#F43F5E', glowBg: 'rgba(244, 63, 94, 0.16)' },
-  { id: 'Confused', label: 'Confused', emoji: '🤔', color: '#FBBF24', glowBg: 'rgba(251, 191, 36, 0.16)' },
+  { id: 'Happy', labelKey: 'emotion_happy', emoji: '😊', color: '#10B981', glowBg: 'rgba(16, 185, 129, 0.16)' },
+  { id: 'Sad', labelKey: 'emotion_sad', emoji: '😔', color: '#60A5FA', glowBg: 'rgba(96, 165, 250, 0.16)' },
+  { id: 'Angry', labelKey: 'emotion_angry', emoji: '😡', color: '#EF4444', glowBg: 'rgba(239, 68, 68, 0.16)' },
+  { id: 'Calm', labelKey: 'emotion_calm', emoji: '😌', color: '#38BDF8', glowBg: 'rgba(56, 189, 248, 0.16)' },
+  { id: 'Anxious', labelKey: 'emotion_anxious', emoji: '😰', color: '#F59E0B', glowBg: 'rgba(245, 158, 11, 0.16)' },
+  { id: 'Tired', labelKey: 'emotion_tired', emoji: '🥱', color: '#A78BFA', glowBg: 'rgba(167, 139, 250, 0.16)' },
+  { id: 'Loved', labelKey: 'emotion_loved', emoji: '❤️', color: '#F43F5E', glowBg: 'rgba(244, 63, 94, 0.16)' },
+  { id: 'Confused', labelKey: 'emotion_confused', emoji: '🤔', color: '#FBBF24', glowBg: 'rgba(251, 191, 36, 0.16)' },
 ];
 
 interface HomeViewProps {
@@ -50,6 +51,8 @@ export function HomeView({
   onSelectEmotion,
   onNavigate,
 }: HomeViewProps) {
+  const { t } = useLanguage();
+
   return (
     <ScrollView
       style={styles.container}
@@ -67,7 +70,7 @@ export function HomeView({
       </View>
 
       {/* ─── Question ─── */}
-      <Text style={styles.questionText}>How are you feeling today?</Text>
+      <Text style={styles.questionText}>{t('how_feeling')}</Text>
 
       {/* ─── 4x2 Emotions Grid ─── */}
       <View style={styles.emotionsGrid}>
@@ -94,7 +97,7 @@ export function HomeView({
                   isSelected && { color: item.color, fontWeight: '700' },
                 ]}
               >
-                {item.label}
+                {t(item.labelKey)}
               </Text>
             </TouchableOpacity>
           );
@@ -102,26 +105,26 @@ export function HomeView({
       </View>
 
       {/* ─── Quick Actions ─── */}
-      <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
+      <Text style={styles.sectionTitle}>{t('quick_actions')}</Text>
       <View style={styles.quickActionsRow}>
-        {/* Talk */}
+        {/* Chat */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: '#818CF8' }]}
           onPress={() => onNavigate('chat')}
           activeOpacity={0.8}
         >
           <MessageSquare size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>Talk</Text>
+          <Text style={styles.actionBtnText}>{t('action_chat')}</Text>
         </TouchableOpacity>
 
-        {/* Voice */}
+        {/* Talk -> leads to VoiceCallView */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: '#EC4899' }]}
-          onPress={() => onNavigate('chat')}
+          onPress={() => onNavigate('voice')}
           activeOpacity={0.8}
         >
           <Mic size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>Voice</Text>
+          <Text style={styles.actionBtnText}>{t('action_talk')}</Text>
         </TouchableOpacity>
 
         {/* Journal */}
@@ -131,7 +134,7 @@ export function HomeView({
           activeOpacity={0.8}
         >
           <BookOpen size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>Journal</Text>
+          <Text style={styles.actionBtnText}>{t('action_journal')}</Text>
         </TouchableOpacity>
 
         {/* Meditate */}
@@ -141,7 +144,7 @@ export function HomeView({
           activeOpacity={0.8}
         >
           <Wind size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>Meditate</Text>
+          <Text style={styles.actionBtnText}>{t('action_meditate')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -151,29 +154,29 @@ export function HomeView({
         <View style={styles.statCard}>
           <View style={styles.statCardHeader}>
             <Flame size={15} color="#FBBF24" />
-            <Text style={styles.statCardTitle}>Streak</Text>
+            <Text style={styles.statCardTitle}>{t('streak')}</Text>
           </View>
           <Text style={styles.statCardNumber}>{streak}</Text>
-          <Text style={styles.statCardSub}>days in a row</Text>
+          <Text style={styles.statCardSub}>{t('days_in_row')}</Text>
         </View>
 
         {/* Avg Mood Card */}
         <View style={styles.statCard}>
           <View style={styles.statCardHeader}>
             <TrendingUp size={15} color="#34D399" />
-            <Text style={styles.statCardTitle}>Avg Mood</Text>
+            <Text style={styles.statCardTitle}>{t('avg_mood')}</Text>
           </View>
           <Text style={styles.statCardNumber}>7.8</Text>
-          <Text style={styles.statCardTrend}>↑ Better this week</Text>
+          <Text style={styles.statCardTrend}>{t('better_this_week')}</Text>
         </View>
       </View>
 
       {/* ─── Weekly Summary Card ─── */}
       <View style={styles.summaryCard}>
         <View style={styles.summaryHeaderRow}>
-          <Text style={styles.summaryTitle}>Weekly Summary</Text>
+          <Text style={styles.summaryTitle}>{t('weekly_summary')}</Text>
           <TouchableOpacity onPress={() => onNavigate('insights')} activeOpacity={0.7}>
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={styles.viewAllText}>{t('view_all')}</Text>
           </TouchableOpacity>
         </View>
 

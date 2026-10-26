@@ -4,38 +4,52 @@ import { TRANSLATIONS, SupportedLanguage, LANGUAGES_LIST } from '@/constants/tra
 
 interface LanguageContextType {
   language: SupportedLanguage;
-  setLanguage: (lang: SupportedLanguage) => Promise<void>;
+  setLanguage: (lang: SupportedLanguage) => void;
   t: (key: string) => string;
 }
 
+const STORAGE_KEY = '@aura_selected_language';
+const VALID_CODES: string[] = LANGUAGES_LIST.map((l) => l.code);
+
 const LanguageContext = createContext<LanguageContextType>({
   language: 'en',
-  setLanguage: async () => {},
+  setLanguage: () => {},
   t: (key: string) => key,
 });
-
-const STORAGE_KEY = '@aura_selected_language';
-const VALID_CODES = LANGUAGES_LIST.map((l) => l.code);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<SupportedLanguage>('en');
 
+  // Load persisted language on start
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
-      if (saved && (VALID_CODES as string[]).includes(saved)) {
-        setLanguageState(saved as SupportedLanguage);
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(STORAGE_KEY);
+        if (saved && VALID_CODES.includes(saved)) {
+          setLanguageState(saved as SupportedLanguage);
+        }
+      } catch (e) {
+        console.warn('AsyncStorage load language error:', e);
       }
-    });
+    })();
   }, []);
 
-  const setLanguage = async (newLang: SupportedLanguage) => {
+  const setLanguage = (newLang: SupportedLanguage) => {
+    // 1. Instant state update triggers immediate re-render across the entire tree
     setLanguageState(newLang);
-    await AsyncStorage.setItem(STORAGE_KEY, newLang);
+    // 2. Persist in background
+    AsyncStorage.setItem(STORAGE_KEY, newLang).catch((err) =>
+      console.warn('AsyncStorage save error:', err)
+    );
   };
 
   const t = (key: string): string => {
-    const langDict = TRANSLATIONS[language] || TRANSLATIONS.en;
-    return langDict[key] || TRANSLATIONS.en[key] || key;
+    const dict = TRANSLATIONS[language] || TRANSLATIONS.en;
+    if (dict && dict[key]) {
+      return dict[key];
+    }
+    // Fallback to English if translation is missing in selected language
+    return TRANSLATIONS.en[key] || key;
   };
 
   return (
