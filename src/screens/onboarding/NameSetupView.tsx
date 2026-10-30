@@ -27,9 +27,15 @@ const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 const CURRENT_YEAR = 2026;
 const YEARS = Array.from({ length: 100 }, (_, i) => CURRENT_YEAR - i);
 
+export interface DateOfBirthPayload {
+  month: string;
+  day: number;
+  year: number;
+}
+
 interface NameSetupViewProps {
   onBack?: () => void;
-  onNext: (name: string, birthday?: string) => void;
+  onNext: (name: string, birthdayObj?: DateOfBirthPayload) => void;
   initialName?: string;
   authProvider?: 'google' | 'apple' | 'guest';
 }
@@ -91,8 +97,12 @@ export function NameSetupView({
 
   const handleContinue = () => {
     const trimmed = displayName.trim() || initialName;
-    const bdayString = hasSelectedBirthday ? formattedDate : undefined;
-    onNext(trimmed, bdayString);
+    const bdayObj: DateOfBirthPayload = {
+      month: MONTHS[selectedMonth],
+      day: selectedDay,
+      year: selectedYear,
+    };
+    onNext(trimmed, bdayObj);
   };
 
   return (

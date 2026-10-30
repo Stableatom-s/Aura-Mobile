@@ -3,6 +3,7 @@ import { StyleSheet, View, SafeAreaView } from "react-native";
 import { Colors } from "@/constants/colors";
 import { ScreenState, JournalRecord, UserProfileData } from "@/types";
 import { StorageService } from "@/services/storage";
+import { apiService } from "@/services/apiService";
 import { BottomNavDock } from "@/components/common/BottomNavDock";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { ScreenTransition } from "@/components/common/ScreenTransition";
@@ -11,7 +12,7 @@ import { ScreenTransition } from "@/components/common/ScreenTransition";
 import { SplashView } from "@/screens/onboarding/SplashView";
 import { OnboardingView } from "@/screens/onboarding/OnboardingView";
 import { AuthView } from "@/screens/onboarding/AuthView";
-import { NameSetupView } from "@/screens/onboarding/NameSetupView";
+import { NameSetupView, DateOfBirthPayload } from "@/screens/onboarding/NameSetupView";
 import { GenderSelectView } from "@/screens/onboarding/GenderSelectView";
 import { HomeView } from "@/screens/HomeView";
 import { ChatView } from "@/screens/ChatView";
@@ -39,6 +40,7 @@ function MainNavigator() {
   const [phase, setPhase] = useState<ScreenState>("splash");
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>("Happy");
   const [showVoiceModal, setShowVoiceModal] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfileData>({
     name: "User",
     email: "",
@@ -52,16 +54,12 @@ function MainNavigator() {
 
   const loadData = async () => {
     try {
-      const storedProfile = await StorageService.getProfile();
-      if (storedProfile && storedProfile.email) {
-        setProfile(storedProfile);
-      }
       const storedJournals = await StorageService.getJournals();
       if (storedJournals) {
         setJournals(storedJournals);
       }
     } catch {
-      // Retain defaults if offline or clean install
+      // Retain defaults if offline
     }
   };
 
@@ -69,24 +67,55 @@ function MainNavigator() {
     loadData();
   }, []);
 
-  const handleAuthComplete = (email: string) => {
-    const updated = { ...profile, email };
+  // 1. Google/Apple Auth Done -> strictly go to name-setup
+  const handleAuthSuccess = (userData: any, _isNewUser: boolean) => {
+    const dbId = userData?.id || userData?._id;
+    if (dbId) setUserId(dbId);
+
+    const updated: UserProfileData = {
+      ...profile,
+      email: userData?.email || profile.email,
+      name: userData?.fullName || profile.name,
+      isPremium: userData?.subscription?.isPro ?? profile.isPremium,
+    };
     setProfile(updated);
     StorageService.saveProfile(updated);
+
+    // Explicitly transition to name-setup
     setPhase("name-setup");
   };
 
-  const handleNameComplete = (name: string) => {
+  // 2. Name & Birthdate Setup Done -> strictly go to gender-select
+  const handleNameComplete = async (name: string, dateOfBirth?: DateOfBirthPayload) => {
     const updated = { ...profile, name };
     setProfile(updated);
     StorageService.saveProfile(updated);
+
+    if (userId) {
+      try {
+        await apiService.updateProfile(userId, { fullName: name, dateOfBirth });
+      } catch (err) {
+        console.warn("Backend name/birthdate sync error:", err);
+      }
+    }
+
     setPhase("gender-select");
   };
 
-  const handleGenderComplete = (gender: string) => {
+  // 3. Gender Setup Done -> only now land on home
+  const handleGenderComplete = async (gender: string) => {
     const updated = { ...profile, gender };
     setProfile(updated);
     StorageService.saveProfile(updated);
+
+    if (userId) {
+      try {
+        await apiService.updateProfile(userId, { gender });
+      } catch (err) {
+        console.warn("Backend gender sync error:", err);
+      }
+    }
+
     setPhase("home");
   };
 
@@ -103,7 +132,7 @@ function MainNavigator() {
     <SafeAreaView style={styles.canvasContainer}>
       <View style={{ flex: 1 }}>
         <ScreenTransition screenKey={phase}>
-          {/* Onboarding Flow */}
+          {/* Onboarding Sequence */}
           {phase === "splash" && (
             <SplashView onNext={() => setPhase("onboarding")} />
           )}
@@ -112,13 +141,13 @@ function MainNavigator() {
           )}
           {phase === "auth" && (
             <AuthView
-              onGoogleSignIn={handleAuthComplete}
-              onAppleSignIn={handleAuthComplete}
-              onGuestContinue={handleAuthComplete}
+              onSuccess={handleAuthSuccess}
+              onGuestContinue={() => setPhase("name-setup")}
             />
           )}
           {phase === "name-setup" && (
             <NameSetupView
+              initialName={profile.name}
               onBack={() => setPhase("auth")}
               onNext={handleNameComplete}
             />
@@ -130,14 +159,20 @@ function MainNavigator() {
             />
           )}
 
-          {/* 5 Primary Core Tabs */}
+          {/* Core App */}
           {phase === "home" && (
             <HomeView
               userName={profile.name}
               selectedEmotion={selectedEmotion}
               onSelectEmotion={setSelectedEmotion}
               streak={profile.streak}
-              onNavigate={setPhase}
+              onNavigate={(screen) => {
+                if (screen === 'notifications') {
+                  setPhase('notification-inbox' as ScreenState);
+                } else {
+                  setPhase(screen as ScreenState);
+                }
+              }}
             />
           )}
           {phase === "chat" && <ChatView userMood={selectedEmotion} />}
@@ -156,7 +191,7 @@ function MainNavigator() {
             />
           )}
 
-          {/* Feature & Settings Sub-Screens */}
+          {/* Subscreens */}
           {phase === "meditate" && (
             <MeditateView onBack={() => setPhase("home")} />
           )}
@@ -195,12 +230,10 @@ function MainNavigator() {
         </ScreenTransition>
       </View>
 
-      {/* Persistent Audio / Voice Overlay */}
       {showVoiceModal && (
         <VoiceModalView onClose={() => setShowVoiceModal(false)} />
       )}
 
-      {/* Floating 5-Tab Bar */}
       {isMainTab && (
         <BottomNavDock activeScreen={phase} onNavigate={setPhase} />
       )}

@@ -51,6 +51,8 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
         email: user.email,
         fullName: user.fullName,
         avatarUrl: user.avatarUrl,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
         preferences: user.preferences,
         subscription: user.subscription,
       },
@@ -101,6 +103,8 @@ router.post('/apple', async (req: Request, res: Response): Promise<void> => {
         id: user._id,
         email: user.email,
         fullName: user.fullName,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
         preferences: user.preferences,
         subscription: user.subscription,
       },
@@ -108,6 +112,38 @@ router.post('/apple', async (req: Request, res: Response): Promise<void> => {
   } catch (error: any) {
     console.error('Apple Auth Error:', error);
     res.status(401).json({ success: false, message: error.message || 'Authentication failed' });
+  }
+});
+
+// PATCH /api/auth/profile/:id - Update onboarding profile details
+router.patch('/profile/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { fullName, gender, dateOfBirth } = req.body;
+
+    const updateFields: Record<string, any> = {};
+    if (fullName) updateFields.fullName = fullName;
+    if (gender) updateFields.gender = gender;
+    if (dateOfBirth) updateFields.dateOfBirth = dateOfBirth;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      user: updatedUser,
+    });
+  } catch (error: any) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,6 +8,8 @@ import {
   Linking,
   Animated,
   Easing,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Svg, {
   Defs,
@@ -18,12 +20,22 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import { makeRedirectUri } from 'expo-auth-session';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAppTheme } from '@/context/ThemeContext';
+import { apiService } from '@/services/apiService';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_WEB_CLIENT_ID = '18916702954-3ln48501s3gmtan795dld03rt2hgprs3.apps.googleusercontent.com';
+const GOOGLE_ANDROID_CLIENT_ID = '18916702954-mo18racbn5r6g8dmr9ne6kap30m81rro.apps.googleusercontent.com';
+const GOOGLE_IOS_CLIENT_ID = '18916702954-edmldikk8idhi86e3m0troht8hmpcdj9.apps.googleusercontent.com';
 
 interface AuthViewProps {
-  onGoogleSignIn: (email: string) => void;
-  onAppleSignIn: (email: string) => void;
-  onGuestContinue?: (email: string) => void;
+  onSuccess: (userData: any, isNewUser: boolean) => void;
+  onGuestContinue?: () => void;
 }
 
 function AnimatedLoginOrb({ accentColor }: { accentColor: string }) {
@@ -168,57 +180,145 @@ function AnimatedAuraLogo({ accentColor }: { accentColor: string }) {
   );
 }
 
-export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
+export function AuthView({ onSuccess, onGuestContinue }: AuthViewProps) {
   const { colors, fonts, accentColor } = useAppTheme();
+  const [loadingProvider, setLoadingProvider] = useState<'google' | 'apple' | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleGoogle = () => {
-    onGoogleSignIn('user@gmail.com');
+  const redirectUri = makeRedirectUri({
+    scheme: 'aura',
+  });
+
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: GOOGLE_WEB_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    redirectUri,
+  });
+
+  useEffect(() => {
+    if (!response) return;
+
+    if (response.type === 'success') {
+      const idToken =
+        response.params?.id_token ||
+        (response as any).authentication?.idToken;
+
+      if (idToken) {
+        handleGoogleServerAuth(idToken);
+      } else {
+        setLoadingProvider(null);
+        setErrorMessage('Google authentication succeeded but returned no id_token.');
+      }
+    } else if (response.type === 'error') {
+      setLoadingProvider(null);
+      setErrorMessage(response.error?.message || 'Google sign-in was cancelled or failed.');
+    } else if (response.type === 'dismiss' || response.type === 'cancel') {
+      setLoadingProvider(null);
+    }
+  }, [response]);
+
+  const handleGoogleServerAuth = async (idToken: string) => {
+    try {
+      setLoadingProvider('google');
+      setErrorMessage(null);
+      const result = await apiService.authenticateWithGoogle(idToken);
+      onSuccess(result.user, result.isNewUser);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Server authentication failed. Verify server connection.');
+    } finally {
+      setLoadingProvider(null);
+    }
   };
 
-  const handleApple = () => {
-    onAppleSignIn('user@icloud.com');
+  const handleGooglePress = () => {
+    setErrorMessage(null);
+    if (!request) {
+      setErrorMessage('Google Auth is initializing. Please tap again in a moment.');
+      return;
+    }
+    setLoadingProvider('google');
+    promptAsync();
   };
 
-  const handleOpenTerms = () => {
-    Linking.openURL('https://aura.ai/terms');
+  const handleApplePress = async () => {
+    setErrorMessage(null);
+    try {
+      setLoadingProvider('apple');
+      if (Platform.OS === 'ios') {
+        const credential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+        });
+
+        if (!credential.identityToken) {
+          throw new Error('Apple Sign-In failed to return an identity token.');
+        }
+
+        const result = await apiService.authenticateWithApple(credential.identityToken, {
+          name: {
+            firstName: credential.fullName?.givenName || undefined,
+            lastName: credential.fullName?.familyName || undefined,
+          },
+        });
+        onSuccess(result.user, result.isNewUser);
+      } else {
+        setErrorMessage('Apple sign-in is not supported on Android devices.');
+      }
+    } catch (err: any) {
+      if ((err as any).code !== 'ERR_REQUEST_CANCELED') {
+        setErrorMessage(err.message || 'Apple authentication failed.');
+      }
+    } finally {
+      setLoadingProvider(null);
+    }
   };
 
   return (
     <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       <View style={styles.centerContainer}>
-        {/* ─── Animated Top Brand Section ─── */}
         <View style={styles.brandBlock}>
           <View style={styles.orbWrapper}>
             <AnimatedLoginOrb accentColor={accentColor} />
           </View>
-
           <View style={styles.titleWrapper}>
             <AnimatedAuraLogo accentColor={accentColor} />
           </View>
-
           <Text
             style={[
               styles.subGreetingText,
-              { fontSize: fonts.caption, color: colors.textSecondary },
+              { fontSize: fonts.caption + 1, color: colors.textSecondary },
             ]}
           >
             Welcome — let’s get started
           </Text>
         </View>
 
-        {/* ─── Dynamic Glass Auth Buttons ─── */}
+        {errorMessage && (
+          <View style={[styles.errorContainer, { borderColor: '#EF444466' }]}>
+            <Ionicons name="alert-circle" size={16} color="#EF4444" />
+            <Text style={[styles.errorText, { fontSize: fonts.caption }]}>{errorMessage}</Text>
+          </View>
+        )}
+
         <View style={styles.buttonStack}>
-          {/* Continue with Google */}
           <TouchableOpacity
             style={[
               styles.translucentGlassCard,
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
-            onPress={handleGoogle}
+            onPress={handleGooglePress}
             activeOpacity={0.7}
+            disabled={loadingProvider !== null}
           >
             <View style={styles.iconSlot}>
-              <Ionicons name="logo-google" size={19} color={colors.textPrimary} />
+              {loadingProvider === 'google' ? (
+                <ActivityIndicator size="small" color={accentColor} />
+              ) : (
+                <Ionicons name="logo-google" size={19} color={colors.textPrimary} />
+              )}
             </View>
             <Text
               style={[
@@ -226,21 +326,25 @@ export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
                 { fontSize: fonts.body, color: colors.textPrimary },
               ]}
             >
-              Continue with Google
+              {loadingProvider === 'google' ? 'Connecting to Google...' : 'Continue with Google'}
             </Text>
           </TouchableOpacity>
 
-          {/* Continue with Apple */}
           <TouchableOpacity
             style={[
               styles.translucentGlassCard,
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
-            onPress={handleApple}
+            onPress={handleApplePress}
             activeOpacity={0.7}
+            disabled={loadingProvider !== null}
           >
             <View style={styles.iconSlot}>
-              <Ionicons name="logo-apple" size={19} color={colors.textPrimary} />
+              {loadingProvider === 'apple' ? (
+                <ActivityIndicator size="small" color={accentColor} />
+              ) : (
+                <Ionicons name="logo-apple" size={19} color={colors.textPrimary} />
+              )}
             </View>
             <Text
               style={[
@@ -248,12 +352,11 @@ export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
                 { fontSize: fonts.body, color: colors.textPrimary },
               ]}
             >
-              Continue with Apple
+              {loadingProvider === 'apple' ? 'Connecting to Apple...' : 'Continue with Apple'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* ─── Legal Footer ─── */}
         <View style={styles.legalFooter}>
           <Text
             style={[
@@ -264,7 +367,7 @@ export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
             By continuing, you agree to our{' '}
             <Text
               style={[styles.termsLink, { color: accentColor }]}
-              onPress={handleOpenTerms}
+              onPress={() => Linking.openURL('https://aura.ai/terms')}
             >
               Terms & Privacy Policy
             </Text>
@@ -276,35 +379,25 @@ export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
 }
 
 const styles = StyleSheet.create({
-  safeContainer: {
-    flex: 1,
-  },
-  centerContainer: {
-    flex: 1,
-    paddingHorizontal: 28,
-    justifyContent: 'center',
-  },
-  brandBlock: {
+  safeContainer: { flex: 1 },
+  centerContainer: { flex: 1, paddingHorizontal: 28, justifyContent: 'center' },
+  brandBlock: { alignItems: 'center', marginBottom: 36 },
+  orbWrapper: { marginBottom: 10, alignItems: 'center', justifyContent: 'center' },
+  titleWrapper: { alignItems: 'center', marginBottom: 6 },
+  subGreetingText: { fontWeight: '500', letterSpacing: 0.1 },
+  errorContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 44,
+    gap: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 18,
   },
-  orbWrapper: {
-    marginBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleWrapper: {
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  subGreetingText: {
-    fontWeight: '500',
-    letterSpacing: 0.1,
-  },
-  buttonStack: {
-    gap: 14,
-    marginBottom: 38,
-  },
+  errorText: { color: '#EF4444', flex: 1, fontWeight: '500' },
+  buttonStack: { gap: 14, marginBottom: 38 },
   translucentGlassCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -318,26 +411,9 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 3,
   },
-  iconSlot: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  authButtonText: {
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  legalFooter: {
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-  legalNoticeText: {
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  termsLink: {
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
+  iconSlot: { width: 28, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  authButtonText: { fontWeight: '700', letterSpacing: -0.2 },
+  legalFooter: { alignItems: 'center', paddingHorizontal: 10 },
+  legalNoticeText: { textAlign: 'center', lineHeight: 18 },
+  termsLink: { fontWeight: '600', textDecorationLine: 'underline' },
 });

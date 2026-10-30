@@ -1,248 +1,142 @@
 import React from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
+  Text,
+  View,
   TouchableOpacity,
+  SafeAreaView,
   ScrollView,
+  Linking,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import {
-  useAppTheme,
-  ACCENT_PRESETS,
-  ThemeMode,
-  FontSizeKey,
-} from '../../context/ThemeContext';
+import { ScreenState } from '@/types';
+import { useAppTheme } from '@/context/ThemeContext';
 
-interface AppearanceViewProps {
+interface AboutViewProps {
   onBack?: () => void;
+  onNavigate?: (screen: ScreenState) => void;
 }
 
-export function AppearanceView({ onBack }: AppearanceViewProps) {
-  const router = useRouter();
-  const {
-    theme,
-    setTheme,
-    accentColor,
-    setAccentColor,
-    fontSize,
-    setFontSize,
-    fonts,
-    colors,
-  } = useAppTheme();
+export function AboutView({ onBack }: AboutViewProps) {
+  const { colors, fonts, accentColor } = useAppTheme();
 
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      router.back();
-    }
+  const handleOpenLink = (url: string) => {
+    Linking.openURL(url).catch(() => {});
   };
 
-  const accentTintBackground = `${accentColor}1A`;
-  const accentBorder = accentColor;
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Top Header Bar */}
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* Top Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          onPress={handleBack}
+          onPress={onBack}
           style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           activeOpacity={0.7}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { fontSize: fonts.header, color: colors.textPrimary }]}>
-          Appearance
+        <Text style={[styles.headerTitle, { color: colors.textPrimary, fontSize: fonts.subheading }]}>
+          About Aura
         </Text>
+        <View style={styles.placeholder} />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* THEME SECTION */}
-        <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
-          THEME
-        </Text>
-        <View style={styles.themeGrid}>
-          {/* Dark Card */}
-          <TouchableOpacity
+        {/* App Hero Badge */}
+        <View style={styles.heroSection}>
+          <View
             style={[
-              styles.themeCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              theme === 'dark' && {
-                borderColor: accentBorder,
-                backgroundColor: accentTintBackground,
-              },
+              styles.logoBadge,
+              { backgroundColor: `${accentColor}1A`, borderColor: accentColor },
             ]}
-            onPress={() => setTheme('dark')}
-            activeOpacity={0.8}
           >
-            <Ionicons
-              name="moon-outline"
-              size={22}
-              color={theme === 'dark' ? accentColor : colors.textMuted}
-            />
-            <Text
-              style={[
-                styles.themeCardLabel,
-                { fontSize: fonts.caption, color: colors.textSecondary },
-                theme === 'dark' && { color: colors.textPrimary, fontWeight: '700' },
-              ]}
-            >
-              Dark
+            <Ionicons name="sparkles" size={36} color={accentColor} />
+          </View>
+          <Text style={[styles.appName, { color: colors.textPrimary, fontSize: fonts.header }]}>
+            Aura
+          </Text>
+          <Text style={[styles.appVersion, { color: colors.textMuted, fontSize: fonts.caption }]}>
+            Version 1.0.0 • Build 2026.1
+          </Text>
+        </View>
+
+        {/* Mission Card */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary, fontSize: fonts.subheading }]}>
+            Our Mission
+          </Text>
+          <Text style={[styles.cardBody, { color: colors.textSecondary, fontSize: fonts.body }]}>
+            Aura is designed to provide a calm sanctuary for emotional clarity, mindful reflection, and personal growth. Powered by empathetic AI coaching and secure journaling, Aura helps you understand your emotional patterns one day at a time.
+          </Text>
+        </View>
+
+        {/* Links Section */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 16 }]}>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => handleOpenLink('https://aura.ai/privacy')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="shield-checkmark-outline" size={20} color={accentColor} />
+            <Text style={[styles.linkText, { color: colors.textPrimary, fontSize: fonts.body }]}>
+              Privacy Architecture
             </Text>
+            <Ionicons name="open-outline" size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {/* Light Card */}
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
           <TouchableOpacity
-            style={[
-              styles.themeCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              theme === 'light' && {
-                borderColor: accentBorder,
-                backgroundColor: accentTintBackground,
-              },
-            ]}
-            onPress={() => setTheme('light')}
-            activeOpacity={0.8}
+            style={styles.linkRow}
+            onPress={() => handleOpenLink('https://aura.ai/terms')}
+            activeOpacity={0.7}
           >
-            <Ionicons
-              name="sunny-outline"
-              size={22}
-              color={theme === 'light' ? accentColor : colors.textMuted}
-            />
-            <Text
-              style={[
-                styles.themeCardLabel,
-                { fontSize: fonts.caption, color: colors.textSecondary },
-                theme === 'light' && { color: colors.textPrimary, fontWeight: '700' },
-              ]}
-            >
-              Light
+            <Ionicons name="document-text-outline" size={20} color={accentColor} />
+            <Text style={[styles.linkText, { color: colors.textPrimary, fontSize: fonts.body }]}>
+              Terms of Service
             </Text>
+            <Ionicons name="open-outline" size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {/* Auto Card */}
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
           <TouchableOpacity
-            style={[
-              styles.themeCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              theme === 'auto' && {
-                borderColor: accentBorder,
-                backgroundColor: accentTintBackground,
-              },
-            ]}
-            onPress={() => setTheme('auto')}
-            activeOpacity={0.8}
+            style={styles.linkRow}
+            onPress={() => handleOpenLink('https://aura.ai')}
+            activeOpacity={0.7}
           >
-            <Ionicons
-              name="sparkles-outline"
-              size={22}
-              color={theme === 'auto' ? accentColor : colors.textMuted}
-            />
-            <Text
-              style={[
-                styles.themeCardLabel,
-                { fontSize: fonts.caption, color: colors.textSecondary },
-                theme === 'auto' && { color: colors.textPrimary, fontWeight: '700' },
-              ]}
-            >
-              Auto
+            <Ionicons name="globe-outline" size={20} color={accentColor} />
+            <Text style={[styles.linkText, { color: colors.textPrimary, fontSize: fonts.body }]}>
+              Official Website
             </Text>
+            <Ionicons name="open-outline" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
-        {/* ACCENT COLOR SECTION */}
-        <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
-          ACCENT COLOR
+        <Text style={[styles.copyright, { color: colors.textMuted, fontSize: fonts.caption }]}>
+          © 2026 Aura Technologies. All rights reserved.
         </Text>
-        <View style={styles.accentColorsRow}>
-          {ACCENT_PRESETS.map((item) => {
-            const isSelected = accentColor.toLowerCase() === item.color.toLowerCase();
-            return (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => setAccentColor(item.color)}
-                style={styles.swatchTouch}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    styles.swatchRing,
-                    isSelected && { borderColor: item.color },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.colorDot,
-                      { backgroundColor: item.color },
-                      isSelected && styles.colorDotSelected,
-                    ]}
-                  />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* FONT SIZE SECTION */}
-        <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
-          FONT SIZE
-        </Text>
-        <View style={[styles.fontSizeContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {(['small', 'medium', 'large'] as FontSizeKey[]).map((sizeKey, idx) => {
-            const isSelected = fontSize === sizeKey;
-            const labelText = sizeKey === 'small' ? 'Small' : sizeKey === 'medium' ? 'Medium' : 'Large';
-
-            return (
-              <React.Fragment key={sizeKey}>
-                {idx > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
-                <TouchableOpacity
-                  style={[
-                    styles.fontSizeRow,
-                    isSelected && { backgroundColor: accentTintBackground },
-                  ]}
-                  onPress={() => setFontSize(sizeKey)}
-                  activeOpacity={0.75}
-                >
-                  <Text
-                    style={[
-                      styles.fontSizeText,
-                      { fontSize: fonts.body, color: isSelected ? colors.textPrimary : colors.textSecondary },
-                      isSelected && { fontWeight: '700' },
-                    ]}
-                  >
-                    {labelText}
-                  </Text>
-                  {isSelected && (
-                    <Ionicons name="checkmark" size={20} color={accentColor} />
-                  )}
-                </TouchableOpacity>
-              </React.Fragment>
-            );
-          })}
-        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 56 : 24,
-    paddingBottom: 24,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 10 : 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 38,
@@ -251,86 +145,67 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
   },
   headerTitle: {
     fontWeight: '700',
-    letterSpacing: -0.3,
+  },
+  placeholder: {
+    width: 38,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    padding: 20,
+    alignItems: 'center',
   },
-  sectionTitle: {
-    fontWeight: '700',
-    letterSpacing: 1.2,
+  heroSection: {
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  logoBadge: {
+    width: 76,
+    height: 76,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 14,
-    marginTop: 18,
   },
-  themeGrid: {
+  appName: {
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  appVersion: {
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  card: {
+    width: '100%',
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+  },
+  cardTitle: {
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  cardBody: {
+    lineHeight: 22,
+  },
+  linkRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
     gap: 12,
-    marginBottom: 18,
   },
-  themeCard: {
+  linkText: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingVertical: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  themeCardLabel: {
-    fontWeight: '500',
-  },
-  accentColorsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 6,
-    marginBottom: 20,
-  },
-  swatchTouch: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatchRing: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  colorDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  colorDotSelected: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-  },
-  fontSizeContainer: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  fontSizeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-  },
-  fontSizeText: {
-    fontWeight: '500',
+    fontWeight: '600',
   },
   divider: {
     height: 1,
+    width: '100%',
+  },
+  copyright: {
+    marginTop: 32,
+    textAlign: 'center',
   },
 });

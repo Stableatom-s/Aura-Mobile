@@ -17,7 +17,7 @@ export function BottomNavDock({ activeScreen, onNavigate }: BottomNavDockProps) 
   const tabs = [
     { id: 'home' as ScreenState, icon: Home, label: t('Home') || 'Home' },
     { id: 'chat' as ScreenState, icon: MessageCircle, label: t('Chat') || 'Chat' },
-    { id: 'journal' as ScreenState, icon: BookOpen, label: t('tournal') || 'Journal' },
+    { id: 'journal' as ScreenState, icon: BookOpen, label: t('Journal') || 'Journal' },
     { id: 'insights' as ScreenState, icon: BarChart2, label: t('Insights') || 'Insights' },
     { id: 'profile' as ScreenState, icon: User, label: t('Profile') || 'Profile' },
   ];
