@@ -1,27 +1,42 @@
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { View, StyleSheet, Platform } from "react-native";
-import { Colors } from "@/constants/colors";
+import React from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
+import { Slot } from 'expo-router';
+import { ThemeProvider, useAppTheme } from '../context/ThemeContext';
+
+function RootContainer() {
+  const { colors } = useAppTheme();
+  return (
+    <View style={[styles.rootContainer, { backgroundColor: colors.background }]}>
+      <Slot />
+    </View>
+  );
+}
+
+function GestureWrapper({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === 'web') {
+    return <>{children}</>;
+  }
+
+  const { GestureHandlerRootView } = require('react-native-gesture-handler');
+  return (
+    <GestureHandlerRootView style={styles.rootContainer}>
+      {children}
+    </GestureHandlerRootView>
+  );
+}
 
 export default function RootLayout() {
   return (
-    <View style={styles.rootContainer}>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: Colors.background },
-          animation: "fade",
-        }}
-      />
-    </View>
+    <ThemeProvider>
+      <GestureWrapper>
+        <RootContainer />
+      </GestureWrapper>
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: Colors.background,
-    ...(Platform.OS === "web" ? { height: "100vh" as any } : {}),
   },
 });

@@ -6,12 +6,22 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { MessageSquare, Mic, BookOpen, Wind, Flame, TrendingUp } from 'lucide-react-native';
+import {
+  MessageSquare,
+  Mic,
+  BookOpen,
+  Wind,
+  Flame,
+  TrendingUp,
+  Bell,
+} from 'lucide-react-native';
 import { GlowingOrb } from '@/components/common/GlowingOrb';
 import { ScreenState } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const EMOTION_GAP = 8;
@@ -40,28 +50,56 @@ interface HomeViewProps {
   userName?: string;
   streak?: number;
   selectedEmotion: string | null;
+  hasUnreadNotifications?: boolean;
   onSelectEmotion: (emotion: string) => void;
-  onNavigate: (screen: ScreenState) => void;
+  onNavigate: (screen: ScreenState | 'notifications') => void;
 }
 
 export function HomeView({
   userName = 'Tanmay',
   streak = 14,
   selectedEmotion = 'Sad',
+  hasUnreadNotifications = true,
   onSelectEmotion,
   onNavigate,
 }: HomeViewProps) {
   const { t } = useLanguage();
+  const { colors, fonts, accentColor } = useAppTheme();
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      {/* ─── Top Left User Greeting ─── */}
-      <View style={styles.headerRow}>
-        <Text style={styles.userNameText}>{userName} 👋</Text>
+      {/* ─── Top Header: Greeting, User Name & Notification Bell ─── */}
+      <View style={styles.topHeader}>
+        <View style={styles.greetingContainer}>
+          <Text style={[styles.subGreetingText, { fontSize: fonts.caption + 2, color: colors.textSecondary }]}>
+            Good morning
+          </Text>
+          <View style={styles.nameRow}>
+            <Text style={[styles.userNameText, { fontSize: fonts.header, color: colors.textPrimary }]}>
+              {userName}
+            </Text>
+            <Text style={styles.waveEmoji}>👋</Text>
+          </View>
+        </View>
+
+        {/* Frosted Notification Button */}
+        <TouchableOpacity
+          style={[
+            styles.bellButton,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+          activeOpacity={0.75}
+          onPress={() => onNavigate('notifications')}
+        >
+          <Bell size={20} color={colors.textPrimary} />
+          {hasUnreadNotifications && (
+            <View style={[styles.unreadDot, { backgroundColor: accentColor }]} />
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* ─── Center Glowing Orb ─── */}
@@ -70,7 +108,9 @@ export function HomeView({
       </View>
 
       {/* ─── Question ─── */}
-      <Text style={styles.questionText}>{t('how_feeling')}</Text>
+      <Text style={[styles.questionText, { fontSize: fonts.body, color: colors.textSecondary }]}>
+        {t('how_feeling')}
+      </Text>
 
       {/* ─── 4x2 Emotions Grid ─── */}
       <View style={styles.emotionsGrid}>
@@ -83,6 +123,7 @@ export function HomeView({
               onPress={() => onSelectEmotion(item.id)}
               style={[
                 styles.emotionCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
                 isSelected && {
                   borderColor: item.color,
                   backgroundColor: item.glowBg,
@@ -94,6 +135,7 @@ export function HomeView({
               <Text
                 style={[
                   styles.emotionLabel,
+                  { fontSize: fonts.caption },
                   isSelected && { color: item.color, fontWeight: '700' },
                 ]}
               >
@@ -105,7 +147,9 @@ export function HomeView({
       </View>
 
       {/* ─── Quick Actions ─── */}
-      <Text style={styles.sectionTitle}>{t('quick_actions')}</Text>
+      <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
+        {t('quick_actions')}
+      </Text>
       <View style={styles.quickActionsRow}>
         {/* Chat */}
         <TouchableOpacity
@@ -114,7 +158,7 @@ export function HomeView({
           activeOpacity={0.8}
         >
           <MessageSquare size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>{t('action_chat')}</Text>
+          <Text style={[styles.actionBtnText, { fontSize: fonts.caption }]}>{t('action_chat')}</Text>
         </TouchableOpacity>
 
         {/* Talk -> leads to VoiceCallView */}
@@ -124,7 +168,7 @@ export function HomeView({
           activeOpacity={0.8}
         >
           <Mic size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>{t('action_talk')}</Text>
+          <Text style={[styles.actionBtnText, { fontSize: fonts.caption }]}>{t('action_talk')}</Text>
         </TouchableOpacity>
 
         {/* Journal */}
@@ -134,7 +178,7 @@ export function HomeView({
           activeOpacity={0.8}
         >
           <BookOpen size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>{t('action_journal')}</Text>
+          <Text style={[styles.actionBtnText, { fontSize: fonts.caption }]}>{t('action_journal')}</Text>
         </TouchableOpacity>
 
         {/* Meditate */}
@@ -144,39 +188,47 @@ export function HomeView({
           activeOpacity={0.8}
         >
           <Wind size={18} color="#FFFFFF" />
-          <Text style={styles.actionBtnText}>{t('action_meditate')}</Text>
+          <Text style={[styles.actionBtnText, { fontSize: fonts.caption }]}>{t('action_meditate')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* ─── 2 Metric Stat Cards ─── */}
       <View style={styles.statsTwoColumnRow}>
         {/* Streak Card */}
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.statCardHeader}>
             <Flame size={15} color="#FBBF24" />
-            <Text style={styles.statCardTitle}>{t('streak')}</Text>
+            <Text style={[styles.statCardTitle, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+              {t('streak')}
+            </Text>
           </View>
-          <Text style={styles.statCardNumber}>{streak}</Text>
-          <Text style={styles.statCardSub}>{t('days_in_row')}</Text>
+          <Text style={[styles.statCardNumber, { color: colors.textPrimary }]}>{streak}</Text>
+          <Text style={[styles.statCardSub, { fontSize: fonts.caption - 1, color: colors.textMuted }]}>
+            {t('days_in_row')}
+          </Text>
         </View>
 
         {/* Avg Mood Card */}
-        <View style={styles.statCard}>
+        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.statCardHeader}>
             <TrendingUp size={15} color="#34D399" />
-            <Text style={styles.statCardTitle}>{t('avg_mood')}</Text>
+            <Text style={[styles.statCardTitle, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+              {t('avg_mood')}
+            </Text>
           </View>
-          <Text style={styles.statCardNumber}>7.8</Text>
+          <Text style={[styles.statCardNumber, { color: colors.textPrimary }]}>7.8</Text>
           <Text style={styles.statCardTrend}>{t('better_this_week')}</Text>
         </View>
       </View>
 
       {/* ─── Weekly Summary Card ─── */}
-      <View style={styles.summaryCard}>
+      <View style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <View style={styles.summaryHeaderRow}>
-          <Text style={styles.summaryTitle}>{t('weekly_summary')}</Text>
+          <Text style={[styles.summaryTitle, { fontSize: fonts.body, color: colors.textPrimary }]}>
+            {t('weekly_summary')}
+          </Text>
           <TouchableOpacity onPress={() => onNavigate('insights')} activeOpacity={0.7}>
-            <Text style={styles.viewAllText}>{t('view_all')}</Text>
+            <Text style={[styles.viewAllText, { color: accentColor }]}>{t('view_all')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -184,8 +236,8 @@ export function HomeView({
           <Svg height="48" width="100%" viewBox="0 0 300 48" preserveAspectRatio="none">
             <Defs>
               <LinearGradient id="waveGlow" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0%" stopColor="#818CF8" stopOpacity="0.35" />
-                <Stop offset="100%" stopColor="#818CF8" stopOpacity="0.0" />
+                <Stop offset="0%" stopColor={accentColor} stopOpacity="0.35" />
+                <Stop offset="100%" stopColor={accentColor} stopOpacity="0.0" />
               </LinearGradient>
             </Defs>
             <Path
@@ -195,14 +247,14 @@ export function HomeView({
             <Path
               d="M 0 32 Q 50 34, 90 20 T 180 18 T 260 26 L 300 24"
               fill="none"
-              stroke="#818CF8"
+              stroke={accentColor}
               strokeWidth="2.5"
             />
           </Svg>
 
           <View style={styles.summaryDaysRow}>
             {['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <Text key={day} style={styles.summaryDayText}>{day}</Text>
+              <Text key={day} style={[styles.summaryDayText, { color: colors.textMuted }]}>{day}</Text>
             ))}
           </View>
         </View>
@@ -214,28 +266,59 @@ export function HomeView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0D18',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: Platform.OS === 'ios' ? 54 : 16,
     paddingBottom: 110,
   },
-  headerRow: {
-    marginBottom: 6,
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  greetingContainer: {
+    flex: 1,
+  },
+  subGreetingText: {
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   userNameText: {
-    fontSize: 24,
     fontWeight: '900',
-    color: '#F8FAFC',
+    letterSpacing: -0.5,
+  },
+  waveEmoji: {
+    fontSize: 22,
+    marginLeft: 6,
+  },
+  bellButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 10,
+    right: 11,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   orbCenterContainer: {
     alignItems: 'center',
     marginVertical: 10,
   },
   questionText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.65)',
     textAlign: 'center',
     marginBottom: 16,
     fontWeight: '500',
@@ -250,25 +333,19 @@ const styles = StyleSheet.create({
   emotionCard: {
     width: EMOTION_WIDTH,
     height: 72,
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
   },
   emotionEmoji: {
     fontSize: 20,
     marginBottom: 4,
   },
   emotionLabel: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.5)',
     fontWeight: '500',
   },
   sectionTitle: {
-    color: 'rgba(255, 255, 255, 0.35)',
-    fontSize: 11,
     letterSpacing: 1.5,
     fontWeight: '700',
     marginBottom: 12,
@@ -288,7 +365,6 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     color: '#FFFFFF',
-    fontSize: 12,
     fontWeight: '700',
   },
   statsTwoColumnRow: {
@@ -298,11 +374,9 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
   },
   statCardHeader: {
     flexDirection: 'row',
@@ -311,18 +385,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statCardTitle: {
-    color: 'rgba(255, 255, 255, 0.55)',
-    fontSize: 12,
     fontWeight: '600',
   },
   statCardNumber: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#F8FAFC',
     marginBottom: 4,
   },
   statCardSub: {
-    color: 'rgba(255, 255, 255, 0.4)',
     fontSize: 11,
   },
   statCardTrend: {
@@ -331,11 +401,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   summaryCard: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
   },
   summaryHeaderRow: {
     flexDirection: 'row',
@@ -344,14 +412,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   summaryTitle: {
-    fontSize: 14,
     fontWeight: '700',
-    color: '#F8FAFC',
   },
   viewAllText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#818CF8',
   },
   summaryChartArea: {
     width: '100%',
@@ -364,7 +429,6 @@ const styles = StyleSheet.create({
   },
   summaryDayText: {
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.35)',
     fontWeight: '500',
   },
 });

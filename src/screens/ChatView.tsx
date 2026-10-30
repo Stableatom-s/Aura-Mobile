@@ -84,3 +84,4 @@ const styles = StyleSheet.create({
   name: { color: "#F8FAFC", fontSize: 16, fontWeight: "700" },
   status: { color: "#34D399", fontSize: 11 },
 });
+

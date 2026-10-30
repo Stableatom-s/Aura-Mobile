@@ -1,66 +1,84 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  StyleSheet,
-  Text,
   View,
+  Text,
+  StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
+  Platform,
 } from 'react-native';
-import { ChevronLeft, Moon, Sun, Sparkles, Check } from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useAppTheme, ACCENT_PRESETS, ThemeMode, FontSizeKey } from '../../context/ThemeContext';
 
-const THEMES = [
-  { id: 'dark', label: 'Dark', icon: Moon },
-  { id: 'light', label: 'Light', icon: Sun },
-  { id: 'auto', label: 'Auto', icon: Sparkles },
-];
+export function AppearanceView({ onBack }: { onBack?: () => void }) {
+  const router = useRouter();
+  const {
+    theme,
+    setTheme,
+    accentColor,
+    setAccentColor,
+    fontSize,
+    setFontSize,
+    fonts,
+    colors,
+  } = useAppTheme();
 
-const ACCENT_COLORS = [
-  { id: 'indigo', color: '#6366F1' },
-  { id: 'purple', color: '#8B5CF6' },
-  { id: 'pink', color: '#EC4899' },
-  { id: 'blue', color: '#3B82F6' },
-  { id: 'emerald', color: '#10B981' },
-  { id: 'amber', color: '#F59E0B' },
-];
+  const handleBack = () => {
+    if (onBack) onBack();
+    else router.back();
+  };
 
-const FONT_SIZES = ['Small', 'Medium', 'Large'];
-
-export function AppearanceView({ onBack }: { onBack: () => void }) {
-  const [selectedTheme, setSelectedTheme] = useState('dark');
-  const [selectedAccent, setSelectedAccent] = useState('indigo');
-  const [selectedFontSize, setSelectedFontSize] = useState('Medium');
+  const accentTintBackground = `${accentColor}1A`;
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.navBar}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <ChevronLeft size={20} color="#FFFFFF" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={handleBack}
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Appearance</Text>
+        <Text style={[styles.headerTitle, { fontSize: fonts.header, color: colors.textPrimary }]}>
+          Appearance
+        </Text>
       </View>
 
-      <ScrollView
-        style={styles.scrollArea}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* THEME */}
-        <Text style={styles.sectionHeader}>THEME</Text>
-        <View style={styles.themeRow}>
-          {THEMES.map((t) => {
-            const Icon = t.icon;
-            const isSelected = selectedTheme === t.id;
+        <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          THEME
+        </Text>
+        <View style={styles.themeGrid}>
+          {(['dark', 'light', 'auto'] as ThemeMode[]).map((mode) => {
+            const isActive = theme === mode;
             return (
               <TouchableOpacity
-                key={t.id}
-                style={[styles.themeCard, isSelected && styles.themeCardActive]}
-                onPress={() => setSelectedTheme(t.id)}
-                activeOpacity={0.7}
+                key={mode}
+                style={[
+                  styles.themeCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  isActive && { borderColor: accentColor, backgroundColor: accentTintBackground },
+                ]}
+                onPress={() => setTheme(mode)}
+                activeOpacity={0.8}
               >
-                <Icon size={20} color={isSelected ? '#818CF8' : 'rgba(255,255,255,0.4)'} />
-                <Text style={[styles.themeLabel, isSelected && styles.themeLabelActive]}>
-                  {t.label}
+                <Ionicons
+                  name={mode === 'dark' ? 'moon-outline' : mode === 'light' ? 'sunny-outline' : 'sparkles-outline'}
+                  size={22}
+                  color={isActive ? accentColor : colors.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.themeCardLabel,
+                    { fontSize: fonts.caption, color: isActive ? colors.textPrimary : colors.textSecondary },
+                    isActive && { fontWeight: '700' },
+                  ]}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </Text>
               </TouchableOpacity>
             );
@@ -68,134 +86,164 @@ export function AppearanceView({ onBack }: { onBack: () => void }) {
         </View>
 
         {/* ACCENT COLOR */}
-        <Text style={styles.sectionHeader}>ACCENT COLOR</Text>
-        <View style={styles.accentRow}>
-          {ACCENT_COLORS.map((item) => {
-            const isSelected = selectedAccent === item.id;
+        <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          ACCENT COLOR
+        </Text>
+        <View style={styles.accentColorsRow}>
+          {ACCENT_PRESETS.map((item) => {
+            const isSelected = accentColor === item.color;
             return (
               <TouchableOpacity
                 key={item.id}
-                style={[
-                  styles.accentRing,
-                  isSelected && { borderColor: item.color, backgroundColor: 'rgba(255,255,255,0.08)' },
-                ]}
-                onPress={() => setSelectedAccent(item.id)}
+                onPress={() => setAccentColor(item.color)}
+                style={styles.swatchTouch}
                 activeOpacity={0.7}
               >
-                <View style={[styles.accentDot, { backgroundColor: item.color }]} />
+                <View style={[styles.swatchRing, isSelected && { borderColor: item.color }]}>
+                  <View
+                    style={[
+                      styles.colorDot,
+                      { backgroundColor: item.color },
+                      isSelected && styles.colorDotSelected,
+                    ]}
+                  />
+                </View>
               </TouchableOpacity>
             );
           })}
         </View>
 
         {/* FONT SIZE */}
-        <Text style={styles.sectionHeader}>FONT SIZE</Text>
-        <View style={styles.fontCard}>
-          {FONT_SIZES.map((size, idx) => {
-            const isSelected = selectedFontSize === size;
-            const isLast = idx === FONT_SIZES.length - 1;
+        <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          FONT SIZE
+        </Text>
+        <View style={[styles.fontSizeContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {(['small', 'medium', 'large'] as FontSizeKey[]).map((sizeKey, idx) => {
+            const isSelected = fontSize === sizeKey;
             return (
-              <TouchableOpacity
-                key={size}
-                style={[
-                  styles.fontRow,
-                  isSelected && styles.fontRowSelected,
-                  !isLast && styles.fontRowBorder,
-                ]}
-                onPress={() => setSelectedFontSize(size)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.fontLabel, isSelected && styles.fontLabelSelected]}>
-                  {size}
-                </Text>
-                {isSelected && <Check size={16} color="#818CF8" />}
-              </TouchableOpacity>
+              <React.Fragment key={sizeKey}>
+                {idx > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+                <TouchableOpacity
+                  style={[styles.fontSizeRow, isSelected && { backgroundColor: accentTintBackground }]}
+                  onPress={() => setFontSize(sizeKey)}
+                  activeOpacity={0.75}
+                >
+                  <Text
+                    style={[
+                      styles.fontSizeText,
+                      { fontSize: fonts.body, color: isSelected ? colors.textPrimary : colors.textSecondary },
+                      isSelected && { fontWeight: '700' },
+                    ]}
+                  >
+                    {sizeKey.charAt(0).toUpperCase() + sizeKey.slice(1)}
+                  </Text>
+                  {isSelected && <Ionicons name="checkmark" size={20} color={accentColor} />}
+                </TouchableOpacity>
+              </React.Fragment>
             );
           })}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: '#0A0D18' },
-  navBar: {
+  container: { flex: 1 },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    gap: 16,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 56 : 24,
+    paddingBottom: 20,
   },
   backButton: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    justifyContent: 'center',
+    borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
   },
-  navTitle: { fontSize: 20, fontWeight: '800', color: '#F8FAFC' },
-  scrollArea: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  sectionHeader: {
-    color: 'rgba(255,255,255,0.35)',
-    fontSize: 11,
-    letterSpacing: 1.5,
+  headerTitle: {
     fontWeight: '700',
-    marginTop: 20,
-    marginBottom: 12,
+    letterSpacing: -0.3,
   },
-  themeRow: { flexDirection: 'row', gap: 10 },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  sectionTitle: {
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 14,
+    marginTop: 18,
+  },
+  themeGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 18,
+  },
   themeCard: {
     flex: 1,
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 16,
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
-  themeCardActive: {
-    borderColor: '#6366F1',
-    backgroundColor: 'rgba(99,102,241,0.18)',
+  themeCardLabel: {
+    fontWeight: '500',
   },
-  themeLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '600' },
-  themeLabelActive: { color: '#818CF8', fontWeight: '700' },
-  accentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 4 },
-  accentRing: {
+  accentColorsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    marginBottom: 20,
+  },
+  swatchTouch: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swatchRing: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  accentDot: { width: 34, height: 34, borderRadius: 17 },
-  fontCard: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
-    borderRadius: 18,
+  colorDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  colorDotSelected: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+  fontSizeContainer: {
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
-  fontRow: {
+  fontSizeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
-  fontRowSelected: {
-    backgroundColor: 'rgba(99,102,241,0.16)',
+  fontSizeText: {
+    fontWeight: '500',
   },
-  fontRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+  divider: {
+    height: 1,
   },
-  fontLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '500' },
-  fontLabelSelected: { color: '#FFFFFF', fontWeight: '700' },
 });
