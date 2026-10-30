@@ -53,6 +53,7 @@ interface ThemeContextType {
     accent: string;
     accentTint: string;
   };
+  t: (key: string) => string;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -112,6 +113,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
   }, [theme, accentColor]);
 
+  const t = (key: string): string => {
+  return key;
+};
+
   const value = useMemo(
     () => ({
       theme,
@@ -122,6 +127,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setFontSize,
       fonts: FONT_PRESETS[fontSize],
       colors,
+      t,
     }),
     [theme, accentColor, fontSize, colors]
   );

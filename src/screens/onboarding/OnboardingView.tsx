@@ -10,6 +10,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = Math.min(width * 0.78, 300);
@@ -50,6 +51,7 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
   const [nextIdx, setNextIdx] = useState<number | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  const { colors, fonts, accentColor } = useAppTheme();
   const transitionProgress = useRef(new Animated.Value(0)).current;
 
   const animateToNext = (targetIdx: number) => {
@@ -99,7 +101,7 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
   });
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       {/* ─── Top Header: Skip ─── */}
       <View style={styles.headerBar}>
         {currentIdx < SLIDES.length - 1 ? (
@@ -109,7 +111,9 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
             style={styles.skipBtn}
             disabled={isAnimating}
           >
-            <Text style={styles.skipText}>Skip</Text>
+            <Text style={[styles.skipText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+              Skip
+            </Text>
           </TouchableOpacity>
         ) : (
           <View style={{ height: 20 }} />
@@ -168,8 +172,22 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
               },
             ]}
           >
-            <Text style={styles.slideTitle}>{SLIDES[currentIdx].title}</Text>
-            <Text style={styles.slideDesc}>{SLIDES[currentIdx].description}</Text>
+            <Text
+              style={[
+                styles.slideTitle,
+                { fontSize: fonts.header, color: colors.textPrimary },
+              ]}
+            >
+              {SLIDES[currentIdx].title}
+            </Text>
+            <Text
+              style={[
+                styles.slideDesc,
+                { fontSize: fonts.body, color: colors.textSecondary },
+              ]}
+            >
+              {SLIDES[currentIdx].description}
+            </Text>
           </Animated.View>
 
           {/* Incoming Text */}
@@ -183,13 +201,27 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
                 },
               ]}
             >
-              <Text style={styles.slideTitle}>{SLIDES[nextIdx].title}</Text>
-              <Text style={styles.slideDesc}>{SLIDES[nextIdx].description}</Text>
+              <Text
+                style={[
+                  styles.slideTitle,
+                  { fontSize: fonts.header, color: colors.textPrimary },
+                ]}
+              >
+                {SLIDES[nextIdx].title}
+              </Text>
+              <Text
+                style={[
+                  styles.slideDesc,
+                  { fontSize: fonts.body, color: colors.textSecondary },
+                ]}
+              >
+                {SLIDES[nextIdx].description}
+              </Text>
             </Animated.View>
           )}
         </View>
 
-        {/* ─── Footer Action Row (Static UI) ─── */}
+        {/* ─── Footer Action Row ─── */}
         <View style={styles.actionRow}>
           <View style={styles.dotsPillGroup}>
             {SLIDES.map((_, i) => {
@@ -199,7 +231,9 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
                   key={i}
                   style={[
                     styles.dotBase,
-                    isActive ? styles.activeDot : styles.inactiveDot,
+                    isActive
+                      ? [styles.activeDot, { backgroundColor: accentColor }]
+                      : [styles.inactiveDot, { backgroundColor: colors.border }],
                   ]}
                 />
               );
@@ -207,12 +241,18 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
           </View>
 
           <TouchableOpacity
-            style={styles.continueBtn}
+            style={[
+              styles.continueBtn,
+              {
+                backgroundColor: accentColor,
+                shadowColor: accentColor,
+              },
+            ]}
             onPress={handleNext}
             activeOpacity={0.88}
             disabled={isAnimating}
           >
-            <Text style={styles.continueBtnText}>
+            <Text style={[styles.continueBtnText, { fontSize: fonts.body }]}>
               {currentIdx === SLIDES.length - 1 ? 'Get Started' : 'Continue'}
             </Text>
             <Text style={styles.arrowIcon}>→</Text>
@@ -226,7 +266,6 @@ export function OnboardingView({ onComplete }: { onComplete: () => void }) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0C1A',
     justifyContent: 'space-between',
     paddingHorizontal: 26,
     paddingBottom: 28,
@@ -243,8 +282,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   skipText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.45)',
     fontWeight: '600',
   },
   graphicContainer: {
@@ -279,15 +316,11 @@ const styles = StyleSheet.create({
     right: 0,
   },
   slideTitle: {
-    fontSize: 27,
     fontWeight: '900',
-    color: '#F8FAFC',
     marginBottom: 10,
     letterSpacing: -0.3,
   },
   slideDesc: {
-    fontSize: 14.5,
-    color: 'rgba(255, 255, 255, 0.58)',
     lineHeight: 22,
   },
   actionRow: {
@@ -306,22 +339,18 @@ const styles = StyleSheet.create({
   },
   activeDot: {
     width: 20,
-    backgroundColor: '#818CF8',
   },
   inactiveDot: {
     width: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   continueBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6366F1',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 18,
     gap: 6,
-    shadowColor: '#6366F1',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
     shadowRadius: 14,
@@ -329,7 +358,6 @@ const styles = StyleSheet.create({
   },
   continueBtnText: {
     color: '#FFFFFF',
-    fontSize: 15,
     fontWeight: '700',
   },
   arrowIcon: {

@@ -9,9 +9,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAppTheme, ACCENT_PRESETS, ThemeMode, FontSizeKey } from '../../context/ThemeContext';
+import {
+  useAppTheme,
+  ACCENT_PRESETS,
+  ThemeMode,
+  FontSizeKey,
+} from '../../context/ThemeContext';
 
-export function AppearanceView({ onBack }: { onBack?: () => void }) {
+interface AppearanceViewProps {
+  onBack?: () => void;
+}
+
+export function AppearanceView({ onBack }: AppearanceViewProps) {
   const router = useRouter();
   const {
     theme,
@@ -22,76 +31,141 @@ export function AppearanceView({ onBack }: { onBack?: () => void }) {
     setFontSize,
     fonts,
     colors,
+    t,
   } = useAppTheme();
 
   const handleBack = () => {
-    if (onBack) onBack();
-    else router.back();
+    if (onBack) {
+      onBack();
+    } else {
+      router.back();
+    }
   };
 
   const accentTintBackground = `${accentColor}1A`;
+  const accentBorder = accentColor;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* Top Header Bar */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={handleBack}
           style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { fontSize: fonts.header, color: colors.textPrimary }]}>
-          Appearance
+          {t('Appearance')}
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* THEME */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* THEME SECTION */}
         <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
-          THEME
+          {t('theme')}
         </Text>
         <View style={styles.themeGrid}>
-          {(['dark', 'light', 'auto'] as ThemeMode[]).map((mode) => {
-            const isActive = theme === mode;
-            return (
-              <TouchableOpacity
-                key={mode}
-                style={[
-                  styles.themeCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  isActive && { borderColor: accentColor, backgroundColor: accentTintBackground },
-                ]}
-                onPress={() => setTheme(mode)}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={mode === 'dark' ? 'moon-outline' : mode === 'light' ? 'sunny-outline' : 'sparkles-outline'}
-                  size={22}
-                  color={isActive ? accentColor : colors.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.themeCardLabel,
-                    { fontSize: fonts.caption, color: isActive ? colors.textPrimary : colors.textSecondary },
-                    isActive && { fontWeight: '700' },
-                  ]}
-                >
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          {/* Dark Card */}
+          <TouchableOpacity
+            style={[
+              styles.themeCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              theme === 'dark' && {
+                borderColor: accentBorder,
+                backgroundColor: accentTintBackground,
+              },
+            ]}
+            onPress={() => setTheme('dark')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="moon-outline"
+              size={22}
+              color={theme === 'dark' ? accentColor : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.themeCardLabel,
+                { fontSize: fonts.caption, color: colors.textSecondary },
+                theme === 'dark' && { color: colors.textPrimary, fontWeight: '700' },
+              ]}
+            >
+              {t('themeDark')}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Light Card */}
+          <TouchableOpacity
+            style={[
+              styles.themeCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              theme === 'light' && {
+                borderColor: accentBorder,
+                backgroundColor: accentTintBackground,
+              },
+            ]}
+            onPress={() => setTheme('light')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="sunny-outline"
+              size={22}
+              color={theme === 'light' ? accentColor : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.themeCardLabel,
+                { fontSize: fonts.caption, color: colors.textSecondary },
+                theme === 'light' && { color: colors.textPrimary, fontWeight: '700' },
+              ]}
+            >
+              {t('themeLight')}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Auto Card */}
+          <TouchableOpacity
+            style={[
+              styles.themeCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              theme === 'auto' && {
+                borderColor: accentBorder,
+                backgroundColor: accentTintBackground,
+              },
+            ]}
+            onPress={() => setTheme('auto')}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="sparkles-outline"
+              size={22}
+              color={theme === 'auto' ? accentColor : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.themeCardLabel,
+                { fontSize: fonts.caption, color: colors.textSecondary },
+                theme === 'auto' && { color: colors.textPrimary, fontWeight: '700' },
+              ]}
+            >
+              {t('themeAuto')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* ACCENT COLOR */}
+        {/* ACCENT COLOR SECTION */}
         <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
-          ACCENT COLOR
+          {t('accentColor')}
         </Text>
         <View style={styles.accentColorsRow}>
           {ACCENT_PRESETS.map((item) => {
-            const isSelected = accentColor === item.color;
+            const isSelected = accentColor.toLowerCase() === item.color.toLowerCase();
             return (
               <TouchableOpacity
                 key={item.id}
@@ -99,7 +173,12 @@ export function AppearanceView({ onBack }: { onBack?: () => void }) {
                 style={styles.swatchTouch}
                 activeOpacity={0.7}
               >
-                <View style={[styles.swatchRing, isSelected && { borderColor: item.color }]}>
+                <View
+                  style={[
+                    styles.swatchRing,
+                    isSelected && { borderColor: item.color },
+                  ]}
+                >
                   <View
                     style={[
                       styles.colorDot,
@@ -113,18 +192,23 @@ export function AppearanceView({ onBack }: { onBack?: () => void }) {
           })}
         </View>
 
-        {/* FONT SIZE */}
+        {/* FONT SIZE SECTION */}
         <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>
-          FONT SIZE
+          {t('fontSize')}
         </Text>
         <View style={[styles.fontSizeContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {(['small', 'medium', 'large'] as FontSizeKey[]).map((sizeKey, idx) => {
             const isSelected = fontSize === sizeKey;
+            const labelKey = sizeKey === 'small' ? 'Small' : sizeKey === 'medium' ? 'Medium' : 'Large';
+
             return (
               <React.Fragment key={sizeKey}>
                 {idx > 0 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
                 <TouchableOpacity
-                  style={[styles.fontSizeRow, isSelected && { backgroundColor: accentTintBackground }]}
+                  style={[
+                    styles.fontSizeRow,
+                    isSelected && { backgroundColor: accentTintBackground },
+                  ]}
                   onPress={() => setFontSize(sizeKey)}
                   activeOpacity={0.75}
                 >
@@ -135,9 +219,11 @@ export function AppearanceView({ onBack }: { onBack?: () => void }) {
                       isSelected && { fontWeight: '700' },
                     ]}
                   >
-                    {sizeKey.charAt(0).toUpperCase() + sizeKey.slice(1)}
+                    {t(labelKey)}
                   </Text>
-                  {isSelected && <Ionicons name="checkmark" size={20} color={accentColor} />}
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={20} color={accentColor} />
+                  )}
                 </TouchableOpacity>
               </React.Fragment>
             );
@@ -149,13 +235,15 @@ export function AppearanceView({ onBack }: { onBack?: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'ios' ? 56 : 24,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   backButton: {
     width: 38,

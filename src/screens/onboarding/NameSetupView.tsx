@@ -14,6 +14,7 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -38,8 +39,10 @@ export function NameSetupView({
   initialName = '',
   authProvider = 'google',
 }: NameSetupViewProps) {
+  const { colors, fonts, accentColor } = useAppTheme();
+
   const [displayName, setDisplayName] = useState(initialName);
-  const [selectedMonth, setSelectedMonth] = useState(8); // September (0-indexed)
+  const [selectedMonth, setSelectedMonth] = useState(8); // September
   const [selectedDay, setSelectedDay] = useState(4);
   const [selectedYear, setSelectedYear] = useState(2000);
   const [hasSelectedBirthday, setHasSelectedBirthday] = useState(false);
@@ -49,9 +52,9 @@ export function NameSetupView({
   const [tempDay, setTempDay] = useState(selectedDay);
   const [tempYear, setTempYear] = useState(selectedYear);
 
-  const monthScrollRef = useRef<ScrollView>(null);
-  const dayScrollRef = useRef<ScrollView>(null);
-  const yearScrollRef = useRef<ScrollView>(null);
+  const monthScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const dayScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const yearScrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
 
   useEffect(() => {
     if (showDatePicker) {
@@ -93,56 +96,103 @@ export function NameSetupView({
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.topContent}>
           {/* Top Dynamic Auth Provider Badge */}
-          <View style={styles.avatarBadge}>
+          <View
+            style={[
+              styles.avatarBadge,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             {authProvider === 'apple' ? (
-              <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
+              <Ionicons name="logo-apple" size={22} color={colors.textPrimary} />
             ) : authProvider === 'google' ? (
-              <Text style={styles.avatarText}>G</Text>
+              <Text style={[styles.avatarText, { color: colors.textPrimary }]}>G</Text>
             ) : (
-              <Ionicons name="person-outline" size={20} color="#FFFFFF" />
+              <Ionicons name="person-outline" size={20} color={colors.textPrimary} />
             )}
           </View>
 
           {/* Heading and Description */}
-          <Text style={styles.title}>What should we call you?</Text>
-          <Text style={styles.subtitle}>
+          <Text
+            style={[
+              styles.title,
+              { fontSize: fonts.header, color: colors.textPrimary },
+            ]}
+          >
+            What should we call you?
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              { fontSize: fonts.body, color: colors.textSecondary },
+            ]}
+          >
             {authProvider === 'apple'
               ? 'Your name from Apple is pre-filled. Feel free to change it.'
               : authProvider === 'google'
-              ? 'Your name from Google is pre-filled. Feel free to change it.'
-              : 'Feel free to choose how you want to be called.'}
+                ? 'Your name from Google is pre-filled. Feel free to change it.'
+                : 'Feel free to choose how you want to be called.'}
           </Text>
 
           {/* Display Name Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.fieldLabel}>DISPLAY NAME</Text>
-            <View style={styles.inputCard}>
+            <Text
+              style={[
+                styles.fieldLabel,
+                { fontSize: fonts.caption, color: colors.textMuted },
+              ]}
+            >
+              DISPLAY NAME
+            </Text>
+            <View
+              style={[
+                styles.inputCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
               <TextInput
                 value={displayName}
                 onChangeText={setDisplayName}
-                style={styles.textInput}
+                style={[
+                  styles.textInput,
+                  { fontSize: fonts.body, color: colors.textPrimary },
+                ]}
                 placeholder="Enter your name"
-                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                placeholderTextColor={colors.textMuted}
                 autoCorrect={false}
               />
             </View>
-            <Text style={styles.helperText}>
+            <Text
+              style={[
+                styles.helperText,
+                { fontSize: fonts.caption, color: colors.textMuted },
+              ]}
+            >
               This is how Aura will address you in conversations.
             </Text>
           </View>
 
           {/* Date of Birth Input Trigger */}
           <View style={[styles.inputGroup, { marginTop: 24 }]}>
-            <Text style={styles.fieldLabel}>DATE OF BIRTH</Text>
+            <Text
+              style={[
+                styles.fieldLabel,
+                { fontSize: fonts.caption, color: colors.textMuted },
+              ]}
+            >
+              DATE OF BIRTH
+            </Text>
             <TouchableOpacity
-              style={styles.inputCard}
+              style={[
+                styles.inputCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
               onPress={() => {
                 setTempMonth(selectedMonth);
                 setTempDay(selectedDay);
@@ -154,13 +204,21 @@ export function NameSetupView({
               <Text
                 style={[
                   styles.textInput,
-                  !hasSelectedBirthday && styles.placeholderColor,
+                  { fontSize: fonts.body },
+                  !hasSelectedBirthday
+                    ? { color: colors.textMuted }
+                    : { color: colors.textPrimary },
                 ]}
               >
                 {hasSelectedBirthday ? formattedDate : 'Select your birthday'}
               </Text>
             </TouchableOpacity>
-            <Text style={styles.helperText}>
+            <Text
+              style={[
+                styles.helperText,
+                { fontSize: fonts.caption, color: colors.textMuted },
+              ]}
+            >
               Used to celebrate milestones and personalize your emotional patterns.
             </Text>
           </View>
@@ -169,11 +227,19 @@ export function NameSetupView({
         {/* Bottom Continue Button */}
         <View style={styles.bottomArea}>
           <TouchableOpacity
-            style={styles.continueButton}
+            style={[
+              styles.continueButton,
+              {
+                backgroundColor: accentColor,
+                shadowColor: accentColor,
+              },
+            ]}
             onPress={handleContinue}
             activeOpacity={0.85}
           >
-            <Text style={styles.continueText}>Continue →</Text>
+            <Text style={[styles.continueText, { fontSize: fonts.body }]}>
+              Continue →
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -186,19 +252,59 @@ export function NameSetupView({
         onRequestClose={() => setShowDatePicker(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: colors.surface, borderTopColor: colors.border },
+            ]}
+          >
+            <View
+              style={[
+                styles.modalHeader,
+                { borderBottomColor: colors.border },
+              ]}
+            >
               <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text
+                  style={[
+                    styles.cancelText,
+                    { fontSize: fonts.body, color: colors.textSecondary },
+                  ]}
+                >
+                  Cancel
+                </Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Select Birthday</Text>
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { fontSize: fonts.subheading, color: colors.textPrimary },
+                ]}
+              >
+                Select Birthday
+              </Text>
               <TouchableOpacity onPress={handleConfirmDate}>
-                <Text style={styles.confirmText}>Confirm</Text>
+                <Text
+                  style={[
+                    styles.confirmText,
+                    { fontSize: fonts.body, color: accentColor },
+                  ]}
+                >
+                  Confirm
+                </Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.pickerBody}>
-              <View style={styles.highlightSelectionLens} pointerEvents="none" />
+              <View
+                style={[
+                  styles.highlightSelectionLens,
+                  {
+                    borderColor: `${accentColor}4D`,
+                    backgroundColor: `${accentColor}12`,
+                  },
+                ]}
+                pointerEvents="none"
+              />
 
               {/* Month */}
               <ScrollView
@@ -215,7 +321,9 @@ export function NameSetupView({
                     <Text
                       style={[
                         styles.itemText,
-                        tempMonth === idx ? styles.activeItemText : styles.inactiveItemText,
+                        tempMonth === idx
+                          ? [styles.activeItemText, { color: colors.textPrimary }]
+                          : [styles.inactiveItemText, { color: colors.textMuted }],
                       ]}
                     >
                       {month}
@@ -240,7 +348,9 @@ export function NameSetupView({
                     <Text
                       style={[
                         styles.itemText,
-                        tempDay === day ? styles.activeItemText : styles.inactiveItemText,
+                        tempDay === day
+                          ? [styles.activeItemText, { color: colors.textPrimary }]
+                          : [styles.inactiveItemText, { color: colors.textMuted }],
                       ]}
                     >
                       {day}
@@ -269,7 +379,9 @@ export function NameSetupView({
                     <Text
                       style={[
                         styles.itemText,
-                        tempYear === yr ? styles.activeItemText : styles.inactiveItemText,
+                        tempYear === yr
+                          ? [styles.activeItemText, { color: colors.textPrimary }]
+                          : [styles.inactiveItemText, { color: colors.textMuted }],
                       ]}
                     >
                       {yr}
@@ -289,7 +401,6 @@ export function NameSetupView({
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0D1D',
   },
   container: {
     flex: 1,
@@ -304,9 +415,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: 'rgba(23, 28, 54, 0.95)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -314,18 +423,13 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#F8FAFC',
   },
   title: {
-    fontSize: 27,
     fontWeight: '900',
-    color: '#F8FAFC',
     letterSpacing: -0.4,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 14.5,
-    color: 'rgba(255, 255, 255, 0.55)',
     lineHeight: 21,
     marginBottom: 32,
   },
@@ -333,32 +437,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   fieldLabel: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.2,
     marginBottom: 10,
   },
   inputCard: {
-    backgroundColor: 'rgba(23, 27, 48, 0.75)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 18,
     paddingHorizontal: 18,
     paddingVertical: 16,
     justifyContent: 'center',
   },
   textInput: {
-    fontSize: 15.5,
     fontWeight: '600',
-    color: '#F8FAFC',
-  },
-  placeholderColor: {
-    color: 'rgba(255, 255, 255, 0.35)',
   },
   helperText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.35)',
     marginTop: 8,
     lineHeight: 16,
   },
@@ -366,12 +459,10 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   continueButton: {
-    backgroundColor: '#6D5DF5',
     borderRadius: 22,
     paddingVertical: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6D5DF5',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 14,
@@ -379,7 +470,6 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '700',
   },
   modalBackdrop: {
@@ -388,12 +478,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: '#12162A',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 36,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.12)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -402,21 +490,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   modalTitle: {
-    color: '#F8FAFC',
-    fontSize: 16,
     fontWeight: '700',
   },
   cancelText: {
-    color: 'rgba(255, 255, 255, 0.45)',
-    fontSize: 15,
     fontWeight: '600',
   },
   confirmText: {
-    color: '#818CF8',
-    fontSize: 15,
     fontWeight: '700',
   },
   pickerBody: {
@@ -432,10 +513,8 @@ const styles = StyleSheet.create({
     right: 16,
     height: ITEM_HEIGHT,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.14)',
   },
   wheelColumn: {
     flex: 1,
@@ -450,11 +529,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
   },
   activeItemText: {
-    color: '#FFFFFF',
     fontWeight: '700',
   },
   inactiveItemText: {
-    color: 'rgba(255, 255, 255, 0.28)',
     fontWeight: '400',
   },
 });

@@ -6,14 +6,16 @@ import { QuickChips } from "@/components/chat/QuickChips";
 import { ChatInputBar } from "@/components/chat/ChatInputBar";
 import { AiService } from "@/services/ai";
 import { ChatMessage } from "@/types";
+import { useAppTheme } from "@/context/ThemeContext";
 
 interface ChatViewProps {
   userMood: string | null;
 }
 
 export function ChatView({ userMood }: ChatViewProps) {
+  const { colors, fonts, accentColor } = useAppTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: "1", text: "Hey Tanmay! 👋 How are you feeling today?", role: "ai", time: "10:30 AM" },
+    { id: "1", text: "Hey there! 👋 How are you feeling today?", role: "ai", time: "10:30 AM" },
     { id: "2", text: "Feeling a bit stressed about work...", role: "user", time: "10:31 AM" },
     {
       id: "3",
@@ -38,15 +40,15 @@ export function ChatView({ userMood }: ChatViewProps) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topBar}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.topBar, { borderBottomColor: colors.border }]}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <View style={styles.avatarBadge}>
-            <Sparkles size={16} color="#fff" />
+          <View style={[styles.avatarBadge, { backgroundColor: accentColor }]}>
+            <Sparkles size={16} color="#ffffff" />
           </View>
           <View>
-            <Text style={styles.name}>Aura</Text>
-            <Text style={styles.status}>▪ Always here for you</Text>
+            <Text style={[styles.name, { fontSize: fonts.subheading, color: colors.textPrimary }]}>Aura</Text>
+            <Text style={[styles.status, { fontSize: fonts.caption }]}>▪ Always here for you</Text>
           </View>
         </View>
       </View>
@@ -71,17 +73,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.06)",
   },
   avatarBadge: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#818CF8",
     justifyContent: "center",
     alignItems: "center",
   },
-  name: { color: "#F8FAFC", fontSize: 16, fontWeight: "700" },
-  status: { color: "#34D399", fontSize: 11 },
+  name: { fontWeight: "700" },
+  status: { color: "#34D399" },
 });
-

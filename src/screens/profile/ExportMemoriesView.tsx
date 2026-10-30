@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { ChevronLeft, Download, Check } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const FORMATS = [
   { id: 'pdf', title: 'PDF', sub: 'Formatted report' },
@@ -30,18 +30,25 @@ const INCLUDES_LIST = [
 export function ExportMemoriesView({ onBack }: { onBack: () => void }) {
   const [selectedFormat, setSelectedFormat] = useState('pdf');
   const [selectedRange, setSelectedRange] = useState('All time');
+  const { colors, fonts, accentColor } = useAppTheme();
 
   const handleExport = () => {
     Alert.alert('Exporting Archive', `Preparing your memories in ${selectedFormat.toUpperCase()} format...`);
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <ChevronLeft size={20} color="#FFFFFF" />
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Export Memories</Text>
+        <Text style={[styles.navTitle, { fontSize: fonts.title, color: colors.textPrimary }]}>
+          Export Memories
+        </Text>
       </View>
 
       <ScrollView
@@ -50,29 +57,47 @@ export function ExportMemoriesView({ onBack }: { onBack: () => void }) {
         showsVerticalScrollIndicator={false}
       >
         {/* FORMAT */}
-        <Text style={styles.sectionHeader}>FORMAT</Text>
+        <Text style={[styles.sectionHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          FORMAT
+        </Text>
         <View style={styles.formatRow}>
           {FORMATS.map((fmt) => {
             const isSelected = selectedFormat === fmt.id;
             return (
               <TouchableOpacity
                 key={fmt.id}
-                style={[styles.formatCard, isSelected && styles.formatCardActive]}
+                style={[
+                  styles.formatCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  isSelected && {
+                    borderColor: accentColor,
+                    backgroundColor: `${accentColor}1A`,
+                  },
+                ]}
                 onPress={() => setSelectedFormat(fmt.id)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.formatTitle, isSelected && styles.formatTitleActive]}>
+                <Text
+                  style={[
+                    styles.formatTitle,
+                    { fontSize: fonts.subheading, color: isSelected ? accentColor : colors.textPrimary },
+                  ]}
+                >
                   {fmt.title}
                 </Text>
-                <Text style={styles.formatSub}>{fmt.sub}</Text>
+                <Text style={[styles.formatSub, { fontSize: fonts.caption, color: colors.textMuted }]}>
+                  {fmt.sub}
+                </Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
         {/* DATE RANGE */}
-        <Text style={styles.sectionHeader}>DATE RANGE</Text>
-        <View style={styles.rangeCard}>
+        <Text style={[styles.sectionHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          DATE RANGE
+        </Text>
+        <View style={[styles.rangeCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {DATE_RANGES.map((range, idx) => {
             const isSelected = selectedRange === range;
             const isLast = idx === DATE_RANGES.length - 1;
@@ -81,43 +106,53 @@ export function ExportMemoriesView({ onBack }: { onBack: () => void }) {
                 key={range}
                 style={[
                   styles.rangeRow,
-                  isSelected && styles.rangeRowSelected,
-                  !isLast && styles.rangeRowBorder,
+                  isSelected && { backgroundColor: `${accentColor}14` },
+                  !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
                 ]}
                 onPress={() => setSelectedRange(range)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.rangeText, isSelected && styles.rangeTextSelected]}>
+                <Text
+                  style={[
+                    styles.rangeText,
+                    {
+                      fontSize: fonts.body,
+                      color: isSelected ? colors.textPrimary : colors.textSecondary,
+                      fontWeight: isSelected ? '700' : '500',
+                    },
+                  ]}
+                >
                   {range}
                 </Text>
-                {isSelected && <Check size={16} color="#818CF8" />}
+                {isSelected && <Check size={16} color={accentColor} />}
               </TouchableOpacity>
             );
           })}
         </View>
 
         {/* INCLUDES */}
-        <View style={styles.includesCard}>
-          <Text style={styles.includesHeading}>Includes</Text>
+        <View style={[styles.includesCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.includesHeading, { fontSize: fonts.caption, color: colors.textMuted }]}>
+            Includes
+          </Text>
           {INCLUDES_LIST.map((item, i) => (
             <View key={i} style={styles.includeItem}>
-              <Check size={14} color="#34D399" />
-              <Text style={styles.includeText}>{item}</Text>
+              <Check size={14} color="#10B981" />
+              <Text style={[styles.includeText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                {item}
+              </Text>
             </View>
           ))}
         </View>
 
         {/* EXPORT BUTTON */}
-        <TouchableOpacity activeOpacity={0.85} onPress={handleExport} style={styles.ctaWrapper}>
-          <LinearGradient
-            colors={['#7C3AED', '#6366F1']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.ctaGradient}
-          >
-            <Download size={18} color="#FFFFFF" />
-            <Text style={styles.ctaText}>Export Now</Text>
-          </LinearGradient>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={handleExport}
+          style={[styles.ctaButton, { backgroundColor: accentColor, shadowColor: accentColor }]}
+        >
+          <Download size={18} color="#FFFFFF" />
+          <Text style={[styles.ctaText, { fontSize: fonts.body }]}>Export Now</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -125,7 +160,7 @@ export function ExportMemoriesView({ onBack }: { onBack: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: '#0A0D18' },
+  safeContainer: { flex: 1 },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,16 +173,14 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  navTitle: { fontSize: 20, fontWeight: '800', color: '#F8FAFC' },
+  navTitle: { fontWeight: '800' },
   scrollArea: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   sectionHeader: {
-    color: 'rgba(255,255,255,0.35)',
-    fontSize: 11,
     letterSpacing: 1.5,
     fontWeight: '700',
     marginTop: 20,
@@ -156,26 +189,17 @@ const styles = StyleSheet.create({
   formatRow: { flexDirection: 'row', gap: 10 },
   formatCard: {
     flex: 1,
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 18,
     paddingVertical: 18,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     gap: 4,
   },
-  formatCardActive: {
-    borderColor: '#6366F1',
-    backgroundColor: 'rgba(99,102,241,0.18)',
-  },
-  formatTitle: { color: 'rgba(255,255,255,0.7)', fontSize: 16, fontWeight: '700' },
-  formatTitleActive: { color: '#818CF8' },
-  formatSub: { color: 'rgba(255,255,255,0.4)', fontSize: 11 },
+  formatTitle: { fontWeight: '700' },
+  formatSub: { fontWeight: '500' },
   rangeCard: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   rangeRow: {
@@ -185,38 +209,29 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 18,
   },
-  rangeRowSelected: { backgroundColor: 'rgba(99,102,241,0.16)' },
-  rangeRowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  rangeText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '500' },
-  rangeTextSelected: { color: '#FFFFFF', fontWeight: '700' },
+  rangeText: {},
   includesCard: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
     padding: 18,
     marginTop: 18,
     gap: 10,
   },
-  includesHeading: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '700', marginBottom: 2 },
+  includesHeading: { fontWeight: '700', marginBottom: 2, letterSpacing: 1 },
   includeItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  includeText: { color: '#F8FAFC', fontSize: 13 },
-  ctaWrapper: {
+  includeText: {},
+  ctaButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 22,
-    overflow: 'hidden',
+    paddingVertical: 16,
     marginTop: 24,
-    shadowColor: '#6366F1',
+    gap: 8,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 8,
   },
-  ctaGradient: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-    gap: 8,
-  },
-  ctaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  ctaText: { color: '#FFFFFF', fontWeight: '700' },
 });

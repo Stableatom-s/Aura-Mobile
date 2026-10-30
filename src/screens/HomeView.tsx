@@ -86,7 +86,7 @@ export function HomeView({
           </View>
         </View>
 
-        {/* Frosted Notification Button */}
+        {/* Notification Bell Button */}
         <TouchableOpacity
           style={[
             styles.bellButton,
@@ -135,8 +135,8 @@ export function HomeView({
               <Text
                 style={[
                   styles.emotionLabel,
-                  { fontSize: fonts.caption },
-                  isSelected && { color: item.color, fontWeight: '700' },
+                  { fontSize: fonts.caption, color: isSelected ? item.color : colors.textSecondary },
+                  isSelected && { fontWeight: '700' },
                 ]}
               >
                 {t(item.labelKey)}
@@ -151,7 +151,6 @@ export function HomeView({
         {t('quick_actions')}
       </Text>
       <View style={styles.quickActionsRow}>
-        {/* Chat */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: '#818CF8' }]}
           onPress={() => onNavigate('chat')}
@@ -161,7 +160,6 @@ export function HomeView({
           <Text style={[styles.actionBtnText, { fontSize: fonts.caption }]}>{t('action_chat')}</Text>
         </TouchableOpacity>
 
-        {/* Talk -> leads to VoiceCallView */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: '#EC4899' }]}
           onPress={() => onNavigate('voice')}
@@ -171,7 +169,6 @@ export function HomeView({
           <Text style={[styles.actionBtnText, { fontSize: fonts.caption }]}>{t('action_talk')}</Text>
         </TouchableOpacity>
 
-        {/* Journal */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: '#8B5CF6' }]}
           onPress={() => onNavigate('journal')}
@@ -181,7 +178,6 @@ export function HomeView({
           <Text style={[styles.actionBtnText, { fontSize: fonts.caption }]}>{t('action_journal')}</Text>
         </TouchableOpacity>
 
-        {/* Meditate */}
         <TouchableOpacity
           style={[styles.actionBtn, { backgroundColor: '#38BDF8' }]}
           onPress={() => onNavigate('meditate')}
@@ -194,7 +190,6 @@ export function HomeView({
 
       {/* ─── 2 Metric Stat Cards ─── */}
       <View style={styles.statsTwoColumnRow}>
-        {/* Streak Card */}
         <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.statCardHeader}>
             <Flame size={15} color="#FBBF24" />
@@ -202,13 +197,12 @@ export function HomeView({
               {t('streak')}
             </Text>
           </View>
-          <Text style={[styles.statCardNumber, { color: colors.textPrimary }]}>{streak}</Text>
+          <Text style={[styles.statCardNumber, { fontSize: fonts.header, color: colors.textPrimary }]}>{streak}</Text>
           <Text style={[styles.statCardSub, { fontSize: fonts.caption - 1, color: colors.textMuted }]}>
             {t('days_in_row')}
           </Text>
         </View>
 
-        {/* Avg Mood Card */}
         <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.statCardHeader}>
             <TrendingUp size={15} color="#34D399" />
@@ -216,8 +210,8 @@ export function HomeView({
               {t('avg_mood')}
             </Text>
           </View>
-          <Text style={[styles.statCardNumber, { color: colors.textPrimary }]}>7.8</Text>
-          <Text style={styles.statCardTrend}>{t('better_this_week')}</Text>
+          <Text style={[styles.statCardNumber, { fontSize: fonts.header, color: colors.textPrimary }]}>7.8</Text>
+          <Text style={[styles.statCardTrend, { fontSize: fonts.caption - 1 }]}>{t('better_this_week')}</Text>
         </View>
       </View>
 
@@ -228,7 +222,7 @@ export function HomeView({
             {t('weekly_summary')}
           </Text>
           <TouchableOpacity onPress={() => onNavigate('insights')} activeOpacity={0.7}>
-            <Text style={[styles.viewAllText, { color: accentColor }]}>{t('view_all')}</Text>
+            <Text style={[styles.viewAllText, { fontSize: fonts.caption, color: accentColor }]}>{t('view_all')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -254,7 +248,9 @@ export function HomeView({
 
           <View style={styles.summaryDaysRow}>
             {['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-              <Text key={day} style={[styles.summaryDayText, { color: colors.textMuted }]}>{day}</Text>
+              <Text key={day} style={[styles.summaryDayText, { fontSize: fonts.caption - 1, color: colors.textMuted }]}>
+                {day}
+              </Text>
             ))}
           </View>
         </View>
@@ -388,16 +384,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statCardNumber: {
-    fontSize: 28,
     fontWeight: '900',
     marginBottom: 4,
   },
   statCardSub: {
-    fontSize: 11,
+    fontWeight: '500',
   },
   statCardTrend: {
     color: '#34D399',
-    fontSize: 11,
     fontWeight: '600',
   },
   summaryCard: {
@@ -415,7 +409,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   viewAllText: {
-    fontSize: 12,
     fontWeight: '600',
   },
   summaryChartArea: {
@@ -428,7 +421,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   summaryDayText: {
-    fontSize: 11,
     fontWeight: '500',
   },
 });

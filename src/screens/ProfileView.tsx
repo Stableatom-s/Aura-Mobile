@@ -24,6 +24,7 @@ import {
   Check,
 } from 'lucide-react-native';
 import { ScreenState, UserProfileData } from '@/types';
+import { useAppTheme } from '@/context/ThemeContext';
 
 interface ProfileViewProps {
   profile?: UserProfileData;
@@ -31,8 +32,10 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ profile, onNavigate }: ProfileViewProps) {
-const user = {
-    name: profile?.name || 'Friend',
+  const { colors, fonts, accentColor, theme, fontSize } = useAppTheme();
+
+  const user = {
+    name: profile?.name || 'Tanmay',
     email: profile?.email || '',
     streak: profile?.streak ?? 0,
     sessions: profile?.sessions ?? 0,
@@ -48,7 +51,7 @@ const user = {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
@@ -56,39 +59,37 @@ const user = {
       <View style={styles.headerArea}>
         <View style={styles.avatarWrapper}>
           <LinearGradient
-            colors={['#818CF8', '#C084FC']}
+            colors={[accentColor, '#C084FC']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.avatarGradient}
           >
             <Text style={styles.avatarEmoji}>👱</Text>
           </LinearGradient>
-          {/* Verified Badge */}
-          <View style={styles.verifiedBadge}>
+          <View style={[styles.verifiedBadge, { borderColor: colors.background }]}>
             <Check size={11} color="#FFFFFF" strokeWidth={3} />
           </View>
         </View>
 
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
+        <Text style={[styles.userName, { fontSize: fonts.title, color: colors.textPrimary }]}>{user.name}</Text>
+        <Text style={[styles.userEmail, { fontSize: fonts.caption, color: colors.textMuted }]}>{user.email}</Text>
 
         {/* 3 Metric Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{user.streak}</Text>
-            <Text style={styles.statLabel}>Streak</Text>
+            <Text style={[styles.statNumber, { fontSize: fonts.title, color: accentColor }]}>{user.streak}</Text>
+            <Text style={[styles.statLabel, { fontSize: fonts.caption - 1, color: colors.textMuted }]}>Streak</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{user.sessions}</Text>
-            <Text style={styles.statLabel}>Sessions</Text>
+            <Text style={[styles.statNumber, { fontSize: fonts.title, color: accentColor }]}>{user.sessions}</Text>
+            <Text style={[styles.statLabel, { fontSize: fonts.caption - 1, color: colors.textMuted }]}>Sessions</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{user.memories}</Text>
-            <Text style={styles.statLabel}>Memories</Text>
+            <Text style={[styles.statNumber, { fontSize: fonts.title, color: accentColor }]}>{user.memories}</Text>
+            <Text style={[styles.statLabel, { fontSize: fonts.caption - 1, color: colors.textMuted }]}>Memories</Text>
           </View>
         </View>
 
-        {/* Upgrade to Premium Pill Button */}
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => onNavigate('subscription')}
@@ -101,45 +102,47 @@ const user = {
             style={styles.upgradeGradient}
           >
             <Text style={styles.starIcon}>★</Text>
-            <Text style={styles.upgradeBtnText}>Upgrade to Premium</Text>
+            <Text style={[styles.upgradeBtnText, { fontSize: fonts.body }]}>Upgrade to Premium</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
 
       {/* ─── PREFERENCES ─── */}
-      <Text style={styles.sectionTitle}>PREFERENCES</Text>
-      <View style={styles.cardGroup}>
+      <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>PREFERENCES</Text>
+      <View style={[styles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('appearance')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <Moon size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <Moon size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Appearance</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Appearance</Text>
           </View>
           <View style={styles.menuRight}>
-            <Text style={styles.menuValue}>Dark</Text>
-            <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+            <Text style={[styles.menuValue, { fontSize: fonts.caption, color: colors.textMuted }]}>
+              {theme.charAt(0).toUpperCase() + theme.slice(1)}
+            </Text>
+            <ChevronRight size={15} color={colors.textMuted} />
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('language')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <Globe size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <Globe size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Language</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Language</Text>
           </View>
           <View style={styles.menuRight}>
-            <Text style={styles.menuValue}>English</Text>
-            <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+            <Text style={[styles.menuValue, { fontSize: fonts.caption, color: colors.textMuted }]}>English</Text>
+            <ChevronRight size={15} color={colors.textMuted} />
           </View>
         </TouchableOpacity>
 
@@ -149,47 +152,47 @@ const user = {
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <Bell size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <Bell size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Notifications</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Notifications</Text>
           </View>
           <View style={styles.menuRight}>
-            <Text style={styles.menuValue}>On</Text>
-            <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+            <Text style={[styles.menuValue, { fontSize: fonts.caption, color: colors.textMuted }]}>On</Text>
+            <ChevronRight size={15} color={colors.textMuted} />
           </View>
         </TouchableOpacity>
       </View>
 
       {/* ─── PRIVACY ─── */}
-      <Text style={styles.sectionTitle}>PRIVACY</Text>
-      <View style={styles.cardGroup}>
+      <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>PRIVACY</Text>
+      <View style={[styles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('privacy')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <Shield size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <Shield size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Privacy Settings</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Privacy Settings</Text>
           </View>
-          <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+          <ChevronRight size={15} color={colors.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('export-memories')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <Download size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <Download size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Export Memories</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Export Memories</Text>
           </View>
-          <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+          <ChevronRight size={15} color={colors.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -201,72 +204,72 @@ const user = {
             <View style={[styles.iconSquare, styles.dangerIconSquare]}>
               <Trash2 size={16} color="#F87171" />
             </View>
-            <Text style={[styles.menuLabel, { color: '#F87171' }]}>Delete Memories</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: '#F87171' }]}>Delete Memories</Text>
           </View>
-          <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+          <ChevronRight size={15} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
       {/* ─── ACCOUNT ─── */}
-      <Text style={styles.sectionTitle}>ACCOUNT</Text>
-      <View style={styles.cardGroup}>
+      <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textMuted }]}>ACCOUNT</Text>
+      <View style={[styles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('subscription')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <Lock size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <Lock size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Subscription</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Subscription</Text>
           </View>
           <View style={styles.menuRight}>
-            <Text style={styles.menuValue}>Free</Text>
-            <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+            <Text style={[styles.menuValue, { fontSize: fonts.caption, color: colors.textMuted }]}>Free</Text>
+            <ChevronRight size={15} color={colors.textMuted} />
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('help')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <HelpCircle size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <HelpCircle size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Help & Support</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Help & Support</Text>
           </View>
-          <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+          <ChevronRight size={15} color={colors.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('about')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <Info size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <Info size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>About Aura</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>About Aura</Text>
           </View>
-          <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+          <ChevronRight size={15} color={colors.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.menuRow}
+          style={[styles.menuRow, { borderBottomColor: colors.border }]}
           onPress={() => onNavigate('terms')}
           activeOpacity={0.7}
         >
           <View style={styles.menuLeft}>
-            <View style={styles.iconSquare}>
-              <FileText size={16} color="rgba(255,255,255,0.7)" />
+            <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
+              <FileText size={16} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuLabel}>Terms & Privacy Policy</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: colors.textPrimary }]}>Terms & Privacy Policy</Text>
           </View>
-          <ChevronRight size={15} color="rgba(255,255,255,0.3)" />
+          <ChevronRight size={15} color={colors.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -278,7 +281,7 @@ const user = {
             <View style={[styles.iconSquare, styles.dangerIconSquare]}>
               <LogOut size={16} color="#F87171" />
             </View>
-            <Text style={[styles.menuLabel, { color: '#F87171' }]}>Sign Out</Text>
+            <Text style={[styles.menuLabel, { fontSize: fonts.body, color: '#F87171' }]}>Sign Out</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -287,10 +290,7 @@ const user = {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0D18',
-  },
+  container: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -323,19 +323,14 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     backgroundColor: '#10B981',
     borderWidth: 2,
-    borderColor: '#0A0D18',
     justifyContent: 'center',
     alignItems: 'center',
   },
   userName: {
-    fontSize: 22,
     fontWeight: '800',
-    color: '#F8FAFC',
     marginBottom: 2,
   },
   userEmail: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.4)',
     marginBottom: 18,
   },
   statsRow: {
@@ -349,15 +344,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 22,
     fontWeight: '800',
-    color: '#60A5FA',
     marginBottom: 2,
   },
-  statLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.45)',
-  },
+  statLabel: {},
   upgradeBtnWrapper: {
     borderRadius: 22,
     overflow: 'hidden',
@@ -381,12 +371,9 @@ const styles = StyleSheet.create({
   },
   upgradeBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
     fontWeight: '700',
   },
   sectionTitle: {
-    color: 'rgba(255, 255, 255, 0.35)',
-    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
     marginTop: 18,
@@ -394,10 +381,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   cardGroup: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
     overflow: 'hidden',
   },
   menuRow: {
@@ -407,7 +392,6 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   noBorder: {
     borderBottomWidth: 0,
@@ -421,7 +405,6 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -429,8 +412,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
   },
   menuLabel: {
-    fontSize: 14.5,
-    color: '#F8FAFC',
     fontWeight: '500',
   },
   menuRight: {
@@ -438,8 +419,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  menuValue: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.4)',
-  },
+  menuValue: {},
 });

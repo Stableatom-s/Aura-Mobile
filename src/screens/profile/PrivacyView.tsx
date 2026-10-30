@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export function PrivacyView({ onBack }: { onBack: () => void }) {
+  const { colors, fonts, accentColor } = useAppTheme();
   const [shareUsage, setShareUsage] = useState(false);
   const [analytics, setAnalytics] = useState(true);
   const [personalizedAi, setPersonalizedAi] = useState(true);
@@ -18,13 +20,19 @@ export function PrivacyView({ onBack }: { onBack: () => void }) {
   const [twoFactor, setTwoFactor] = useState(false);
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       {/* Top Header */}
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <ChevronLeft size={20} color="#FFFFFF" />
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Privacy Settings</Text>
+        <Text style={[styles.navTitle, { fontSize: fonts.title, color: colors.textPrimary }]}>
+          Privacy Settings
+        </Text>
       </View>
 
       <ScrollView
@@ -33,59 +41,108 @@ export function PrivacyView({ onBack }: { onBack: () => void }) {
         showsVerticalScrollIndicator={false}
       >
         {/* DATA & PRIVACY SECTION */}
-        <Text style={styles.sectionHeader}>DATA & PRIVACY</Text>
-        <View style={styles.cardGroup}>
-          <View style={styles.settingRow}>
+        <Text style={[styles.sectionHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          DATA & PRIVACY
+        </Text>
+        <View style={[styles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
             <View style={styles.textContainer}>
-              <Text style={styles.titleText}>Share Usage Data</Text>
-              <Text style={styles.subText}>Help improve Aura with anonymous data</Text>
+              <Text style={[styles.titleText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                Share Usage Data
+              </Text>
+              <Text style={[styles.subText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                Help improve Aura with anonymous data
+              </Text>
             </View>
-            <ToggleSwitch value={shareUsage} onToggle={() => setShareUsage(!shareUsage)} />
+            <ToggleSwitch
+              value={shareUsage}
+              onToggle={() => setShareUsage(!shareUsage)}
+              
+            />
           </View>
 
-          <View style={styles.settingRow}>
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
             <View style={styles.textContainer}>
-              <Text style={styles.titleText}>Analytics</Text>
-              <Text style={styles.subText}>Allow crash reports and diagnostics</Text>
+              <Text style={[styles.titleText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                Analytics
+              </Text>
+              <Text style={[styles.subText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                Allow crash reports and diagnostics
+              </Text>
             </View>
-            <ToggleSwitch value={analytics} onToggle={() => setAnalytics(!analytics)} />
+            <ToggleSwitch
+              value={analytics}
+              onToggle={() => setAnalytics(!analytics)}
+              
+            />
           </View>
 
           <View style={[styles.settingRow, styles.noBorder]}>
             <View style={styles.textContainer}>
-              <Text style={styles.titleText}>Personalized AI</Text>
-              <Text style={styles.subText}>Use your history to improve responses</Text>
+              <Text style={[styles.titleText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                Personalized AI
+              </Text>
+              <Text style={[styles.subText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                Use your history to improve responses
+              </Text>
             </View>
             <ToggleSwitch
               value={personalizedAi}
               onToggle={() => setPersonalizedAi(!personalizedAi)}
+              
             />
           </View>
         </View>
 
         {/* SECURITY SECTION */}
-        <Text style={styles.sectionHeader}>SECURITY</Text>
-        <View style={styles.cardGroup}>
-          <View style={styles.settingRow}>
+        <Text style={[styles.sectionHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          SECURITY
+        </Text>
+        <View style={[styles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
             <View style={styles.textContainer}>
-              <Text style={styles.titleText}>Face ID / Biometric</Text>
-              <Text style={styles.subText}>Lock app with biometric authentication</Text>
+              <Text style={[styles.titleText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                Face ID / Biometric
+              </Text>
+              <Text style={[styles.subText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                Lock app with biometric authentication
+              </Text>
             </View>
-            <ToggleSwitch value={biometrics} onToggle={() => setBiometrics(!biometrics)} />
+            <ToggleSwitch
+              value={biometrics}
+              onToggle={() => setBiometrics(!biometrics)}
+              
+            />
           </View>
 
           <View style={[styles.settingRow, styles.noBorder]}>
             <View style={styles.textContainer}>
-              <Text style={styles.titleText}>Two-Factor Auth</Text>
-              <Text style={styles.subText}>Add an extra layer of security</Text>
+              <Text style={[styles.titleText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                Two-Factor Auth
+              </Text>
+              <Text style={[styles.subText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                Add an extra layer of security
+              </Text>
             </View>
-            <ToggleSwitch value={twoFactor} onToggle={() => setTwoFactor(!twoFactor)} />
+            <ToggleSwitch
+              value={twoFactor}
+              onToggle={() => setTwoFactor(!twoFactor)}
+              
+            />
           </View>
         </View>
 
         {/* Bottom Encryption Disclaimer Box */}
-        <View style={styles.disclaimerBox}>
-          <Text style={styles.disclaimerText}>
+        <View
+          style={[
+            styles.disclaimerBox,
+            {
+              backgroundColor: `${accentColor}12`,
+              borderColor: `${accentColor}33`,
+            },
+          ]}
+        >
+          <Text style={[styles.disclaimerText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
             Your emotional data is encrypted end-to-end and stored locally on your device. We never sell your data.
           </Text>
         </View>
@@ -97,7 +154,6 @@ export function PrivacyView({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0D18',
   },
   navBar: {
     flexDirection: 'row',
@@ -111,14 +167,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   navTitle: {
-    fontSize: 20,
     fontWeight: '800',
-    color: '#F8FAFC',
   },
   scrollArea: {
     flex: 1,
@@ -128,8 +182,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   sectionHeader: {
-    color: 'rgba(255, 255, 255, 0.35)',
-    fontSize: 11,
     letterSpacing: 1.5,
     fontWeight: '700',
     marginTop: 20,
@@ -137,10 +189,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   cardGroup: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     overflow: 'hidden',
   },
   settingRow: {
@@ -150,7 +200,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   noBorder: {
     borderBottomWidth: 0,
@@ -160,19 +209,13 @@ const styles = StyleSheet.create({
     paddingRight: 14,
   },
   titleText: {
-    color: '#F8FAFC',
-    fontSize: 14.5,
     fontWeight: '600',
     marginBottom: 3,
   },
   subText: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 12,
     lineHeight: 17,
   },
   disclaimerBox: {
-    backgroundColor: 'rgba(30, 27, 75, 0.45)',
-    borderColor: 'rgba(129, 140, 248, 0.22)',
     borderWidth: 1,
     borderRadius: 20,
     paddingVertical: 18,
@@ -180,8 +223,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   disclaimerText: {
-    color: 'rgba(199, 210, 254, 0.85)',
-    fontSize: 12.5,
     lineHeight: 19,
     textAlign: 'center',
   },

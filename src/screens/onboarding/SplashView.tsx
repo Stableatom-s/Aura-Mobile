@@ -1,10 +1,11 @@
-
 import React, { useEffect, useRef } from "react";
 import { StyleSheet, Text, View, Animated, Easing } from "react-native";
 import { GlowingOrb } from "@/components/common/GlowingOrb";
+import { useAppTheme } from "@/context/ThemeContext";
 
 export function SplashView({ onNext }: { onNext: () => void }) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const { colors, fonts, accentColor } = useAppTheme();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -21,13 +22,39 @@ export function SplashView({ onNext }: { onNext: () => void }) {
   }, [fadeAnim, onNext]);
 
   return (
-    <Animated.View style={[styles.wrapper, { opacity: fadeAnim }]}>
+    <Animated.View
+      style={[
+        styles.wrapper,
+        { backgroundColor: colors.background, opacity: fadeAnim },
+      ]}
+    >
       <View style={styles.center}>
         <GlowingOrb size={110} />
-        <Text style={styles.brandTitle}>Aura</Text>
-        <Text style={styles.brandTagline}>ALWAYS HERE. ALWAYS LISTENING.</Text>
+        <Text
+          style={[
+            styles.brandTitle,
+            { color: colors.textPrimary },
+          ]}
+        >
+          Aura
+        </Text>
+        <Text
+          style={[
+            styles.brandTagline,
+            { fontSize: fonts.caption, color: accentColor },
+          ]}
+        >
+          ALWAYS HERE. ALWAYS LISTENING.
+        </Text>
       </View>
-      <Text style={styles.footer}>Your companion for every emotion.</Text>
+      <Text
+        style={[
+          styles.footer,
+          { fontSize: fonts.caption, color: colors.textMuted },
+        ]}
+      >
+        Your companion for every emotion.
+      </Text>
     </Animated.View>
   );
 }
@@ -47,19 +74,15 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 50,
     fontWeight: "900",
-    color: "#E0E7FF",
     marginTop: 22,
     letterSpacing: -0.5,
   },
   brandTagline: {
-    color: "rgba(255,255,255,0.45)",
-    fontSize: 11,
     letterSpacing: 2.8,
     marginTop: 6,
     fontWeight: "600",
   },
   footer: {
-    color: "rgba(255,255,255,0.32)",
-    fontSize: 13,
+    fontWeight: "500",
   },
 });

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { useAppTheme } from '@/context/ThemeContext';
 
 interface NotificationOption {
   id: string;
@@ -57,6 +58,7 @@ const NOTIFICATION_OPTIONS: NotificationOption[] = [
 ];
 
 export function NotificationsView({ onBack }: { onBack: () => void }) {
+  const { colors, fonts, accentColor } = useAppTheme();
   const [toggles, setToggles] = useState<Record<string, boolean>>(
     NOTIFICATION_OPTIONS.reduce(
       (acc, curr) => ({ ...acc, [curr.id]: curr.initialValue }),
@@ -69,17 +71,19 @@ export function NotificationsView({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.navBar}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={onBack}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={20} color="#FFFFFF" />
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Notifications</Text>
+        <Text style={[styles.navTitle, { fontSize: fonts.title, color: colors.textPrimary }]}>
+          Notifications
+        </Text>
       </View>
 
       {/* Notifications List */}
@@ -88,28 +92,38 @@ export function NotificationsView({ onBack }: { onBack: () => void }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {NOTIFICATION_OPTIONS.map((item, index) => {
-          const isLast = index === NOTIFICATION_OPTIONS.length - 1;
-          const isEnabled = toggles[item.id];
+        <View style={[styles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {NOTIFICATION_OPTIONS.map((item, index) => {
+            const isLast = index === NOTIFICATION_OPTIONS.length - 1;
+            const isEnabled = toggles[item.id];
 
-          return (
-            <View
-              key={item.id}
-              style={[styles.notificationRow, !isLast && styles.rowDivider]}
-            >
-              <View style={styles.textContainer}>
-                <Text style={styles.titleText}>{item.title}</Text>
-                <Text style={styles.subtitleText}>{item.subtitle}</Text>
+            return (
+              <View
+                key={item.id}
+                style={[
+                  styles.notificationRow,
+                  !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                ]}
+              >
+                <View style={styles.textContainer}>
+                  <Text style={[styles.titleText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                    {item.title}
+                  </Text>
+                  <Text style={[styles.subtitleText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                    {item.subtitle}
+                  </Text>
+                </View>
+
+                {/* Custom smooth toggle */}
+                <ToggleSwitch
+                  value={isEnabled}
+                  onToggle={() => handleToggle(item.id)}
+                  
+                />
               </View>
-
-              {/* Custom smooth toggle */}
-              <ToggleSwitch
-                value={isEnabled}
-                onToggle={() => handleToggle(item.id)}
-              />
-            </View>
-          );
-        })}
+            );
+          })}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -118,7 +132,6 @@ export function NotificationsView({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0D18',
   },
   navBar: {
     flexDirection: 'row',
@@ -132,14 +145,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   navTitle: {
-    fontSize: 20,
     fontWeight: '800',
-    color: '#F8FAFC',
   },
   scrollArea: {
     flex: 1,
@@ -148,29 +159,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
   },
+  cardGroup: {
+    borderRadius: 20,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
   notificationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 18,
-  },
-  rowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    paddingHorizontal: 18,
   },
   textContainer: {
     flex: 1,
     paddingRight: 16,
   },
   titleText: {
-    fontSize: 15,
     fontWeight: '700',
-    color: '#F8FAFC',
     marginBottom: 4,
   },
   subtitleText: {
-    fontSize: 12.5,
-    color: 'rgba(255, 255, 255, 0.4)',
     lineHeight: 18,
   },
 });

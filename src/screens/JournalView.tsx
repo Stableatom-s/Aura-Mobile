@@ -8,12 +8,12 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Sparkles } from "lucide-react-native";
 import { HistoryItem } from "@/components/journal/HistoryItem";
 import { AiService } from "@/services/ai";
 import { StorageService } from "@/services/storage";
 import { JournalRecord } from "@/types";
+import { useAppTheme } from "@/context/ThemeContext";
 
 interface JournalViewProps {
   journals: JournalRecord[];
@@ -21,6 +21,7 @@ interface JournalViewProps {
 }
 
 export function JournalView({ journals, onRefreshJournals }: JournalViewProps) {
+  const { colors, fonts, accentColor } = useAppTheme();
   const [tab, setTab] = useState<"today" | "history">("today");
   const [selectedMood, setSelectedMood] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -70,37 +71,61 @@ Free write: ${freeWrite}
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.dateLabel}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.dateLabel, { fontSize: fonts.caption, color: colors.textMuted }]}>
         {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
       </Text>
-      <Text style={styles.heading}>Daily Journal</Text>
+      <Text style={[styles.heading, { fontSize: fonts.header, color: colors.textPrimary }]}>Daily Journal</Text>
 
-      <View style={styles.tabTrack}>
+      <View style={[styles.tabTrack, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => setTab("today")}
-          style={[styles.tabPill, tab === "today" && styles.tabActive]}
+          style={[styles.tabPill, tab === "today" && { backgroundColor: accentColor }]}
         >
-          <Text style={[styles.tabLabel, tab === "today" && { color: "#fff" }]}>Today</Text>
+          <Text
+            style={[
+              styles.tabLabel,
+              { fontSize: fonts.caption, color: tab === "today" ? "#FFFFFF" : colors.textMuted },
+            ]}
+          >
+            Today
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setTab("history")}
-          style={[styles.tabPill, tab === "history" && styles.tabActive]}
+          style={[styles.tabPill, tab === "history" && { backgroundColor: accentColor }]}
         >
-          <Text style={[styles.tabLabel, tab === "history" && { color: "#fff" }]}>History</Text>
+          <Text
+            style={[
+              styles.tabLabel,
+              { fontSize: fonts.caption, color: tab === "history" ? "#FFFFFF" : colors.textMuted },
+            ]}
+          >
+            History
+          </Text>
         </TouchableOpacity>
       </View>
 
       {tab === "today" ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-          <View style={styles.cardBox}>
-            <Text style={styles.sectionTitle}>How's your mood?</Text>
+          <View style={[styles.cardBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+              How's your mood?
+            </Text>
             <View style={styles.emojiRow}>
               {moodIcons.map((emo, idx) => (
                 <TouchableOpacity
                   key={idx}
                   onPress={() => setSelectedMood(idx)}
-                  style={[styles.emojiPill, selectedMood === idx && styles.emojiPillSelected]}
+                  style={[
+                    styles.emojiPill,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    selectedMood === idx && {
+                      borderColor: accentColor,
+                      backgroundColor: `${accentColor}1A`,
+                      borderWidth: 1.5,
+                    },
+                  ]}
                 >
                   <Text style={{ fontSize: 22 }}>{emo}</Text>
                 </TouchableOpacity>
@@ -114,48 +139,51 @@ Free write: ${freeWrite}
             { prompt: "What are you grateful for?", val: grateful, setter: setGrateful },
             { prompt: "Today's achievement", val: achievement, setter: setAchievement },
           ].map((item, idx) => (
-            <View key={idx} style={styles.promptBox}>
-              <Text style={styles.promptLabel}>{item.prompt}</Text>
+            <View
+              key={idx}
+              style={[styles.promptBox, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
+              <Text style={[styles.promptLabel, { fontSize: fonts.body, color: accentColor }]}>
+                {item.prompt}
+              </Text>
               <TextInput
                 value={item.val}
                 onChangeText={item.setter}
                 placeholder="Write something..."
-                placeholderTextColor="rgba(255,255,255,0.35)"
-                style={styles.promptInput}
+                placeholderTextColor={colors.textMuted}
+                style={[styles.promptInput, { fontSize: fonts.body, color: colors.textPrimary }]}
               />
             </View>
           ))}
 
-          <View style={styles.promptBox}>
-            <Text style={styles.promptLabel}>✏️ Free write</Text>
+          <View style={[styles.promptBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.promptLabel, { fontSize: fonts.body, color: accentColor }]}>✏️ Free write</Text>
             <TextInput
               value={freeWrite}
               onChangeText={setFreeWrite}
               placeholder="Write freely about your day — no structure needed..."
-              placeholderTextColor="rgba(255,255,255,0.35)"
+              placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={5}
-              style={[styles.promptInput, { minHeight: 90, textAlignVertical: "top" }]}
+              style={[
+                styles.promptInput,
+                { fontSize: fonts.body, color: colors.textPrimary, minHeight: 90, textAlignVertical: "top" },
+              ]}
             />
           </View>
 
           <TouchableOpacity
-            style={styles.aiButton}
+            style={[styles.aiButton, { backgroundColor: accentColor, shadowColor: accentColor }]}
             onPress={handleGenerateReflection}
             disabled={isGenerating}
             activeOpacity={0.85}
           >
-            <LinearGradient
-              colors={["#4F46E5", "#7C3AED"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.aiGradient}
-            >
-              <Sparkles size={18} color="#C4B5FD" />
-              <Text style={styles.aiButtonText}>
+            <View style={styles.aiButtonContent}>
+              <Sparkles size={18} color="#FFFFFF" />
+              <Text style={[styles.aiButtonText, { fontSize: fonts.body }]}>
                 {isGenerating ? "Reflecting..." : "Generate AI Reflection"}
               </Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </ScrollView>
       ) : (
@@ -171,63 +199,51 @@ Free write: ${freeWrite}
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 20, paddingTop: 10 },
-  dateLabel: { color: "rgba(255,255,255,0.4)", fontSize: 12 },
-  heading: { fontSize: 26, fontWeight: "800", color: "#F8FAFC", marginBottom: 14 },
+  dateLabel: { fontWeight: "500" },
+  heading: { fontWeight: "800", marginBottom: 14 },
   tabTrack: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 16,
     padding: 3,
     marginBottom: 16,
+    borderWidth: 1,
   },
   tabPill: { flex: 1, paddingVertical: 8, borderRadius: 14, alignItems: "center" },
-  tabActive: { backgroundColor: "#818CF8" },
-  tabLabel: { color: "rgba(255,255,255,0.4)", fontSize: 13, fontWeight: "600" },
+  tabLabel: { fontWeight: "600" },
   cardBox: {
-    backgroundColor: "rgba(255,255,255,0.05)",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
     marginBottom: 12,
   },
-  sectionTitle: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 10 },
+  sectionTitle: { marginBottom: 10, fontWeight: "500" },
   emojiRow: { flexDirection: "row", justifyContent: "space-between" },
   emojiPill: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.05)",
     justifyContent: "center",
     alignItems: "center",
-  },
-  emojiPillSelected: {
-    borderColor: "#818CF8",
-    borderWidth: 1.5,
-    backgroundColor: "rgba(129,140,248,0.2)",
+    borderWidth: 1,
   },
   promptBox: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
     marginBottom: 12,
   },
-  promptLabel: { color: "#C4B5FD", fontSize: 14, fontWeight: "600", marginBottom: 8 },
-  promptInput: { color: "#F8FAFC", fontSize: 14, lineHeight: 20 },
+  promptLabel: { fontWeight: "600", marginBottom: 8 },
+  promptInput: { lineHeight: 20 },
   aiButton: {
     borderRadius: 22,
-    overflow: "hidden",
     marginTop: 8,
     marginBottom: 20,
-    shadowColor: "#6366F1",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 15,
     elevation: 8,
   },
-  aiGradient: {
+  aiButtonContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -235,5 +251,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
   },
-  aiButtonText: { color: "#F8FAFC", fontSize: 15, fontWeight: "700" },
+  aiButtonText: { color: "#FFFFFF", fontWeight: "700" },
 });
