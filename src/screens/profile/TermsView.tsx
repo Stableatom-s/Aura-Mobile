@@ -9,6 +9,7 @@ import {
   Linking,
 } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const PRIVACY_SECTIONS = [
   {
@@ -88,39 +89,64 @@ const TERMS_SECTIONS = [
 
 export function TermsView({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<'privacy' | 'terms'>('privacy');
+  const { colors, fonts, accentColor } = useAppTheme();
   const sections = activeTab === 'privacy' ? PRIVACY_SECTIONS : TERMS_SECTIONS;
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       {/* Top Header */}
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <ChevronLeft size={20} color="#FFFFFF" />
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Terms & Privacy</Text>
+        <Text style={[styles.navTitle, { fontSize: fonts.title, color: colors.textPrimary }]}>
+          Terms & Privacy
+        </Text>
       </View>
 
       {/* Pill Toggle Tab Switcher */}
       <View style={styles.tabTrackWrapper}>
-        <View style={styles.tabTrack}>
+        <View style={[styles.tabTrack, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'privacy' && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              activeTab === 'privacy' && { backgroundColor: `${accentColor}2A` },
+            ]}
             onPress={() => setActiveTab('privacy')}
             activeOpacity={0.8}
           >
             <Text style={styles.tabEmoji}>🔒</Text>
-            <Text style={[styles.tabText, activeTab === 'privacy' && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                { fontSize: fonts.caption, color: colors.textSecondary },
+                activeTab === 'privacy' && { color: accentColor, fontWeight: '700' },
+              ]}
+            >
               Privacy Policy
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'terms' && styles.tabButtonActive]}
+            style={[
+              styles.tabButton,
+              activeTab === 'terms' && { backgroundColor: `${accentColor}2A` },
+            ]}
             onPress={() => setActiveTab('terms')}
             activeOpacity={0.8}
           >
             <Text style={styles.tabEmoji}>📋</Text>
-            <Text style={[styles.tabText, activeTab === 'terms' && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                { fontSize: fonts.caption, color: colors.textSecondary },
+                activeTab === 'terms' && { color: accentColor, fontWeight: '700' },
+              ]}
+            >
               Terms of Service
             </Text>
           </TouchableOpacity>
@@ -133,30 +159,37 @@ export function TermsView({ onBack }: { onBack: () => void }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.dateStamp}>
+        <Text style={[styles.dateStamp, { fontSize: fonts.caption, color: colors.textMuted }]}>
           Last updated: October 1, 2025 · Effective: October 15, 2025
         </Text>
 
         <View style={styles.cardsStack}>
           {sections.map((item) => (
-            <View key={item.num} style={styles.sectionCard}>
+            <View
+              key={item.num}
+              style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            >
               <View style={styles.sectionTitleRow}>
-                <View style={styles.numberBadge}>
-                  <Text style={styles.numberText}>{item.num}</Text>
+                <View style={[styles.numberBadge, { backgroundColor: `${accentColor}25` }]}>
+                  <Text style={[styles.numberText, { color: accentColor }]}>{item.num}</Text>
                 </View>
-                <Text style={styles.sectionHeading}>{item.title}</Text>
+                <Text style={[styles.sectionHeading, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                  {item.title}
+                </Text>
               </View>
-              <Text style={styles.sectionBody}>{item.body}</Text>
+              <Text style={[styles.sectionBody, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                {item.body}
+              </Text>
             </View>
           ))}
         </View>
 
         {/* Contact Footer Box */}
-        <View style={styles.footerBox}>
-          <Text style={styles.footerText}>
+        <View style={[styles.footerBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.footerText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
             Questions? Contact us at{' '}
             <Text
-              style={styles.footerLink}
+              style={[styles.footerLink, { color: accentColor }]}
               onPress={() => Linking.openURL('mailto:legal@aura.ai')}
             >
               legal@aura.ai
@@ -171,7 +204,6 @@ export function TermsView({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0D18',
   },
   navBar: {
     flexDirection: 'row',
@@ -185,14 +217,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   navTitle: {
-    fontSize: 20,
     fontWeight: '800',
-    color: '#F8FAFC',
   },
   tabTrackWrapper: {
     paddingHorizontal: 20,
@@ -200,11 +230,9 @@ const styles = StyleSheet.create({
   },
   tabTrack: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 16,
     padding: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   tabButton: {
     flex: 1,
@@ -215,20 +243,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
-  tabButtonActive: {
-    backgroundColor: 'rgba(99, 102, 241, 0.28)',
-  },
   tabEmoji: {
     fontSize: 13,
   },
   tabText: {
-    color: 'rgba(255, 255, 255, 0.45)',
-    fontSize: 13,
     fontWeight: '600',
-  },
-  tabTextActive: {
-    color: '#C7D2FE',
-    fontWeight: '700',
   },
   scrollArea: {
     flex: 1,
@@ -238,8 +257,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   dateStamp: {
-    color: 'rgba(255, 255, 255, 0.35)',
-    fontSize: 12,
     marginBottom: 14,
     marginTop: 4,
   },
@@ -247,11 +264,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionCard: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -263,40 +278,28 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(129, 140, 248, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   numberText: {
-    color: '#818CF8',
     fontSize: 12,
     fontWeight: '800',
   },
   sectionHeading: {
-    color: '#F8FAFC',
-    fontSize: 15,
     fontWeight: '700',
   },
   sectionBody: {
-    color: 'rgba(255, 255, 255, 0.55)',
-    fontSize: 13,
     lineHeight: 20,
   },
   footerBox: {
-    backgroundColor: 'rgba(23, 27, 46, 0.5)',
     borderRadius: 18,
     paddingVertical: 18,
     alignItems: 'center',
     marginTop: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  footerText: {
-    color: 'rgba(255, 255, 255, 0.45)',
-    fontSize: 13,
-  },
+  footerText: {},
   footerLink: {
-    color: '#818CF8',
     fontWeight: '600',
   },
 });

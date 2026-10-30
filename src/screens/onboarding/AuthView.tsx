@@ -18,6 +18,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/context/ThemeContext';
 
 interface AuthViewProps {
   onGoogleSignIn: (email: string) => void;
@@ -25,8 +26,7 @@ interface AuthViewProps {
   onGuestContinue?: (email: string) => void;
 }
 
-/* ─── Animated Atmospheric Orb ─── */
-function AnimatedLoginOrb() {
+function AnimatedLoginOrb({ accentColor }: { accentColor: string }) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const haloOpacity = useRef(new Animated.Value(0.75)).current;
 
@@ -77,16 +77,14 @@ function AnimatedLoginOrb() {
       <Svg width="124" height="124" viewBox="0 0 120 120">
         <Defs>
           <RadialGradient id="loginOrbHalo" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor="#C084FC" stopOpacity="0.85" />
-            <Stop offset="32%" stopColor="#818CF8" stopOpacity="0.5" />
-            <Stop offset="65%" stopColor="#4F46E5" stopOpacity="0.15" />
+            <Stop offset="0%" stopColor={accentColor} stopOpacity="0.85" />
+            <Stop offset="45%" stopColor={accentColor} stopOpacity="0.35" />
             <Stop offset="100%" stopColor="#070814" stopOpacity="0" />
           </RadialGradient>
           <RadialGradient id="loginOrbCore" cx="50%" cy="50%" r="50%">
             <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-            <Stop offset="28%" stopColor="#F5D0FE" stopOpacity="0.95" />
-            <Stop offset="62%" stopColor="#A855F7" stopOpacity="0.85" />
-            <Stop offset="100%" stopColor="#6366F1" stopOpacity="0.2" />
+            <Stop offset="40%" stopColor="#FFFFFF" stopOpacity="0.8" />
+            <Stop offset="100%" stopColor={accentColor} stopOpacity="0.3" />
           </RadialGradient>
         </Defs>
 
@@ -98,8 +96,7 @@ function AnimatedLoginOrb() {
   );
 }
 
-/* ─── Animated Aura Logo ─── */
-function AnimatedAuraLogo() {
+function AnimatedAuraLogo({ accentColor }: { accentColor: string }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0.85)).current;
 
@@ -150,9 +147,9 @@ function AnimatedAuraLogo() {
       <Svg width="160" height="48" viewBox="0 0 160 48">
         <Defs>
           <SvgLinearGradient id="auraLogoShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor="#A5B4FC" />
-            <Stop offset="45%" stopColor="#D8B4FE" />
-            <Stop offset="100%" stopColor="#F472B6" />
+            <Stop offset="0%" stopColor="#FFFFFF" />
+            <Stop offset="50%" stopColor={accentColor} />
+            <Stop offset="100%" stopColor="#FFFFFF" />
           </SvgLinearGradient>
         </Defs>
         <SvgText
@@ -172,6 +169,8 @@ function AnimatedAuraLogo() {
 }
 
 export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
+  const { colors, fonts, accentColor } = useAppTheme();
+
   const handleGoogle = () => {
     onGoogleSignIn('user@gmail.com');
   };
@@ -185,55 +184,88 @@ export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       <View style={styles.centerContainer}>
         {/* ─── Animated Top Brand Section ─── */}
         <View style={styles.brandBlock}>
           <View style={styles.orbWrapper}>
-            <AnimatedLoginOrb />
+            <AnimatedLoginOrb accentColor={accentColor} />
           </View>
 
           <View style={styles.titleWrapper}>
-            <AnimatedAuraLogo />
+            <AnimatedAuraLogo accentColor={accentColor} />
           </View>
 
-          <Text style={styles.subGreetingText}>
+          <Text
+            style={[
+              styles.subGreetingText,
+              { fontSize: fonts.caption, color: colors.textSecondary },
+            ]}
+          >
             Welcome — let’s get started
           </Text>
         </View>
 
-        {/* ─── Translucent Glass Auth Buttons ─── */}
+        {/* ─── Dynamic Glass Auth Buttons ─── */}
         <View style={styles.buttonStack}>
           {/* Continue with Google */}
           <TouchableOpacity
-            style={styles.translucentGlassCard}
+            style={[
+              styles.translucentGlassCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
             onPress={handleGoogle}
             activeOpacity={0.7}
           >
             <View style={styles.iconSlot}>
-              <Ionicons name="logo-google" size={19} color="#FFFFFF" />
+              <Ionicons name="logo-google" size={19} color={colors.textPrimary} />
             </View>
-            <Text style={styles.authButtonText}>Continue with Google</Text>
+            <Text
+              style={[
+                styles.authButtonText,
+                { fontSize: fonts.body, color: colors.textPrimary },
+              ]}
+            >
+              Continue with Google
+            </Text>
           </TouchableOpacity>
 
           {/* Continue with Apple */}
           <TouchableOpacity
-            style={styles.translucentGlassCard}
+            style={[
+              styles.translucentGlassCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
             onPress={handleApple}
             activeOpacity={0.7}
           >
             <View style={styles.iconSlot}>
-              <Ionicons name="logo-apple" size={19} color="#FFFFFF" />
+              <Ionicons name="logo-apple" size={19} color={colors.textPrimary} />
             </View>
-            <Text style={styles.authButtonText}>Continue with Apple</Text>
+            <Text
+              style={[
+                styles.authButtonText,
+                { fontSize: fonts.body, color: colors.textPrimary },
+              ]}
+            >
+              Continue with Apple
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* ─── Legal Footer ─── */}
         <View style={styles.legalFooter}>
-          <Text style={styles.legalNoticeText}>
+          <Text
+            style={[
+              styles.legalNoticeText,
+              { fontSize: fonts.caption, color: colors.textMuted },
+            ]}
+          >
             By continuing, you agree to our{' '}
-            <Text style={styles.termsLink} onPress={handleOpenTerms}>
+            <Text
+              style={[styles.termsLink, { color: accentColor }]}
+              onPress={handleOpenTerms}
+            >
               Terms & Privacy Policy
             </Text>
           </Text>
@@ -246,7 +278,6 @@ export function AuthView({ onGoogleSignIn, onAppleSignIn }: AuthViewProps) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#070814',
   },
   centerContainer: {
     flex: 1,
@@ -267,8 +298,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   subGreetingText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.45)',
     fontWeight: '500',
     letterSpacing: 0.1,
   },
@@ -276,21 +305,18 @@ const styles = StyleSheet.create({
     gap: 14,
     marginBottom: 38,
   },
-  /* Translucent frosted glass effect */
   translucentGlassCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 36, 60, 0.38)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.11)',
     borderRadius: 22,
     paddingVertical: 18,
     paddingHorizontal: 22,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
+    shadowOpacity: 0.15,
     shadowRadius: 16,
-    elevation: 4,
+    elevation: 3,
   },
   iconSlot: {
     width: 28,
@@ -298,12 +324,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
-  appleEmoji: {
-    fontSize: 19,
-  },
   authButtonText: {
-    color: '#F8FAFC',
-    fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
@@ -312,13 +333,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   legalNoticeText: {
-    color: 'rgba(255, 255, 255, 0.36)',
-    fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
   },
   termsLink: {
-    color: '#4F46E5',
     fontWeight: '600',
     textDecorationLine: 'underline',
   },

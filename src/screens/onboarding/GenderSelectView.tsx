@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48 - 12) / 2;
@@ -41,14 +41,27 @@ interface GenderSelectViewProps {
 
 export function GenderSelectView({ onComplete }: GenderSelectViewProps) {
   const [selectedGender, setSelectedGender] = useState<string>('');
+  const { colors, fonts, accentColor } = useAppTheme();
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>How do you identify?</Text>
-          <Text style={styles.subtitle}>
+          <Text
+            style={[
+              styles.title,
+              { fontSize: fonts.header, color: colors.textPrimary },
+            ]}
+          >
+            How do you identify?
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              { fontSize: fonts.caption, color: colors.textSecondary },
+            ]}
+          >
             Aura uses this to personalize your experience with care and respect.
           </Text>
         </View>
@@ -68,13 +81,34 @@ export function GenderSelectView({ onComplete }: GenderSelectViewProps) {
                 onPress={() => setSelectedGender(item.id)}
                 style={[
                   styles.genderCard,
-                  isSelected && styles.genderCardSelected,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: isSelected ? accentColor : colors.border,
+                    borderWidth: isSelected ? 1.5 : 1,
+                  },
+                  isSelected && {
+                    backgroundColor: `${accentColor}1A`,
+                  },
                 ]}
               >
-                <Text style={[styles.symbolText, isSelected && styles.symbolTextSelected]}>
+                <Text
+                  style={[
+                    styles.symbolText,
+                    { color: isSelected ? accentColor : colors.textMuted },
+                  ]}
+                >
                   {item.symbol}
                 </Text>
-                <Text style={[styles.labelText, isSelected && styles.labelTextSelected]}>
+                <Text
+                  style={[
+                    styles.labelText,
+                    {
+                      fontSize: fonts.caption,
+                      color: isSelected ? colors.textPrimary : colors.textSecondary,
+                      fontWeight: isSelected ? '700' : '500',
+                    },
+                  ]}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -87,16 +121,17 @@ export function GenderSelectView({ onComplete }: GenderSelectViewProps) {
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => onComplete(selectedGender)}
-            style={styles.ctaButtonWrapper}
+            style={[
+              styles.ctaButton,
+              {
+                backgroundColor: accentColor,
+                shadowColor: accentColor,
+              },
+            ]}
           >
-            <LinearGradient
-              colors={['#7C3AED', '#6366F1']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaGradient}
-            >
-              <Text style={styles.ctaButtonText}>Get Started →</Text>
-            </LinearGradient>
+            <Text style={[styles.ctaButtonText, { fontSize: fonts.body }]}>
+              Get Started →
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -107,7 +142,6 @@ export function GenderSelectView({ onComplete }: GenderSelectViewProps) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0D18',
   },
   content: {
     flex: 1,
@@ -119,14 +153,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   title: {
-    fontSize: 28,
     fontWeight: '800',
-    color: '#F8FAFC',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13.5,
-    color: 'rgba(255, 255, 255, 0.45)',
     lineHeight: 20,
   },
   scrollArea: {
@@ -142,57 +172,33 @@ const styles = StyleSheet.create({
   genderCard: {
     width: CARD_WIDTH,
     height: 78,
-    backgroundColor: 'rgba(26, 31, 56, 0.7)',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
   },
-  genderCardSelected: {
-    borderColor: '#7C3AED',
-    borderWidth: 1.5,
-    backgroundColor: 'rgba(124, 58, 237, 0.16)',
-  },
   symbolText: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.4)',
     marginBottom: 4,
   },
-  symbolTextSelected: {
-    color: '#A78BFA',
-  },
   labelText: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.65)',
-    fontWeight: '500',
     textAlign: 'center',
-  },
-  labelTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
   footer: {
     paddingVertical: 14,
   },
-  ctaButtonWrapper: {
+  ctaButton: {
     borderRadius: 22,
-    overflow: 'hidden',
-    shadowColor: '#7C3AED',
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 8,
   },
-  ctaGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   ctaButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
     fontWeight: '700',
   },
 });

@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export interface NotificationItem {
   id: string;
@@ -70,6 +71,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 ];
 
 export function NotificationInboxView({ onBack }: { onBack: () => void }) {
+  const { colors, fonts, accentColor } = useAppTheme();
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
@@ -85,19 +87,27 @@ export function NotificationInboxView({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.navBar}>
         <View style={styles.navLeft}>
-          <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-            <ChevronLeft size={20} color="#FFFFFF" />
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={onBack}
+            activeOpacity={0.7}
+          >
+            <ChevronLeft size={20} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.navTitle}>Notifications</Text>
+          <Text style={[styles.navTitle, { fontSize: fonts.title, color: colors.textPrimary }]}>
+            Notifications
+          </Text>
         </View>
 
         {unreadCount > 0 && (
           <TouchableOpacity onPress={markAllRead} activeOpacity={0.7}>
-            <Text style={styles.markReadText}>Mark all read</Text>
+            <Text style={[styles.markReadText, { fontSize: fonts.caption, color: accentColor }]}>
+              Mark all read
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -109,7 +119,9 @@ export function NotificationInboxView({ onBack }: { onBack: () => void }) {
       >
         {/* NEW Badge Indicator */}
         {unreadCount > 0 && (
-          <Text style={styles.sectionHeader}>NEW · {unreadCount}</Text>
+          <Text style={[styles.sectionHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
+            NEW · {unreadCount}
+          </Text>
         )}
 
         <View style={styles.cardsStack}>
@@ -118,24 +130,39 @@ export function NotificationInboxView({ onBack }: { onBack: () => void }) {
               key={item.id}
               activeOpacity={0.8}
               onPress={() => handlePressItem(item.id)}
-              style={[styles.notifCard, item.unread && styles.notifCardUnread]}
+              style={[
+                styles.notifCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+                item.unread && {
+                  backgroundColor: `${accentColor}1A`,
+                  borderColor: `${accentColor}4D`,
+                },
+              ]}
             >
               {/* Icon Square */}
-              <View style={styles.iconSquare}>
+              <View style={[styles.iconSquare, { backgroundColor: colors.background }]}>
                 <Text style={styles.iconEmoji}>{item.icon}</Text>
               </View>
 
               {/* Text Body */}
               <View style={styles.textContainer}>
                 <View style={styles.cardTopRow}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={[styles.cardTitle, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                    {item.title}
+                  </Text>
                   <View style={styles.timeRow}>
-                    <Text style={styles.timeText}>{item.time}</Text>
-                    {item.unread && <View style={styles.unreadDot} />}
+                    <Text style={[styles.timeText, { fontSize: fonts.caption - 1, color: colors.textMuted }]}>
+                      {item.time}
+                    </Text>
+                    {item.unread && (
+                      <View style={[styles.unreadDot, { backgroundColor: accentColor }]} />
+                    )}
                   </View>
                 </View>
 
-                <Text style={styles.cardDesc}>{item.desc}</Text>
+                <Text style={[styles.cardDesc, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                  {item.desc}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -148,7 +175,6 @@ export function NotificationInboxView({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0D18',
   },
   navBar: {
     flexDirection: 'row',
@@ -167,18 +193,14 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   navTitle: {
-    fontSize: 20,
     fontWeight: '800',
-    color: '#F8FAFC',
   },
   markReadText: {
-    color: '#818CF8',
-    fontSize: 13,
     fontWeight: '600',
   },
   scrollArea: {
@@ -189,8 +211,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   sectionHeader: {
-    color: 'rgba(255, 255, 255, 0.35)',
-    fontSize: 11,
     letterSpacing: 1.5,
     fontWeight: '700',
     marginBottom: 12,
@@ -201,22 +221,15 @@ const styles = StyleSheet.create({
   },
   notifCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     gap: 14,
-  },
-  notifCardUnread: {
-    backgroundColor: 'rgba(30, 27, 75, 0.65)',
-    borderColor: 'rgba(129, 140, 248, 0.25)',
   },
   iconSquare: {
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -233,8 +246,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardTitle: {
-    color: '#F8FAFC',
-    fontSize: 15,
     fontWeight: '700',
   },
   timeRow: {
@@ -243,19 +254,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   timeText: {
-    color: 'rgba(255, 255, 255, 0.35)',
-    fontSize: 11,
     fontWeight: '500',
   },
   unreadDot: {
     width: 6.5,
     height: 6.5,
     borderRadius: 3.5,
-    backgroundColor: '#818CF8',
   },
   cardDesc: {
-    color: 'rgba(255, 255, 255, 0.55)',
-    fontSize: 12.5,
     lineHeight: 18,
   },
 });

@@ -10,9 +10,11 @@ import {
 import { ChevronLeft, Check } from 'lucide-react-native';
 import { useLanguage } from '@/context/LanguageContext';
 import { LANGUAGES_LIST, SupportedLanguage } from '@/constants/translations';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export function LanguageView({ onBack }: { onBack: () => void }) {
   const { language, setLanguage, t } = useLanguage();
+  const { colors, fonts, accentColor } = useAppTheme();
 
   const handleSelectLanguage = (code: SupportedLanguage) => {
     console.log('[LanguageView] Selecting language:', code);
@@ -20,16 +22,22 @@ export function LanguageView({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <ChevronLeft size={20} color="#FFFFFF" />
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>{t('menu_language') || 'Language'}</Text>
+        <Text style={[styles.navTitle, { fontSize: fonts.title, color: colors.textPrimary }]}>
+          {t('menu_language') || 'Language'}
+        </Text>
       </View>
 
       <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.listContainer}>
+        <View style={[styles.listContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {LANGUAGES_LIST.map((item, index) => {
             const isSelected = language === item.code;
             const isLast = index === LANGUAGES_LIST.length - 1;
@@ -37,20 +45,35 @@ export function LanguageView({ onBack }: { onBack: () => void }) {
             return (
               <TouchableOpacity
                 key={item.code}
-                style={[styles.langRow, !isLast && styles.rowDivider]}
+                style={[
+                  styles.langRow,
+                  !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                  isSelected && { backgroundColor: `${accentColor}1A` },
+                ]}
                 onPress={() => handleSelectLanguage(item.code as SupportedLanguage)}
                 activeOpacity={0.75}
               >
                 <View>
-                  <Text style={[styles.langName, isSelected && styles.langNameActive]}>
+                  <Text
+                    style={[
+                      styles.langName,
+                      {
+                        fontSize: fonts.body,
+                        color: isSelected ? accentColor : colors.textPrimary,
+                        fontWeight: isSelected ? '700' : '600',
+                      },
+                    ]}
+                  >
                     {item.name}
                   </Text>
-                  <Text style={styles.nativeName}>{item.native}</Text>
+                  <Text style={[styles.nativeName, { fontSize: fonts.caption, color: colors.textMuted }]}>
+                    {item.native}
+                  </Text>
                 </View>
 
                 {isSelected && (
-                  <View style={styles.checkBadge}>
-                    <Check size={16} color="#818CF8" />
+                  <View style={[styles.checkBadge, { backgroundColor: `${accentColor}25` }]}>
+                    <Check size={16} color={accentColor} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -63,7 +86,7 @@ export function LanguageView({ onBack }: { onBack: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: '#0A0D18' },
+  safeContainer: { flex: 1 },
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -76,18 +99,16 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  navTitle: { fontSize: 20, fontWeight: '800', color: '#F8FAFC' },
+  navTitle: { fontWeight: '800' },
   scrollArea: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 40 },
   listContainer: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
     overflow: 'hidden',
   },
   langRow: {
@@ -97,18 +118,12 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 20,
   },
-  rowDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  langName: { fontSize: 15, fontWeight: '600', color: '#F8FAFC', marginBottom: 2 },
-  langNameActive: { color: '#818CF8' },
-  nativeName: { fontSize: 12, color: 'rgba(255, 255, 255, 0.4)' },
+  langName: { marginBottom: 2 },
+  nativeName: {},
   checkBadge: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(129, 140, 248, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },

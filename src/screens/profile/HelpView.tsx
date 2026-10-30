@@ -13,8 +13,8 @@ import {
   UIManager,
 } from 'react-native';
 import { ChevronLeft, ChevronDown, ChevronUp, MessageSquare, Mail } from 'lucide-react-native';
+import { useAppTheme } from '@/context/ThemeContext';
 
-// Enable layout animation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -49,9 +49,9 @@ const FAQS: FaqItem[] = [
 
 export function HelpView({ onBack }: { onBack: () => void }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const { colors, fonts, accentColor } = useAppTheme();
 
   const toggleAccordion = (idx: number) => {
-    // Hardware accelerated smooth layout transition (no JS thread blocking)
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOpenIdx((prev) => (prev === idx ? null : idx));
   };
@@ -65,13 +65,19 @@ export function HelpView({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       {/* Top Header */}
       <View style={styles.navBar}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-          <ChevronLeft size={20} color="#FFFFFF" />
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          onPress={onBack}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Help & Support</Text>
+        <Text style={[styles.navTitle, { fontSize: fonts.title, color: colors.textPrimary }]}>
+          Help & Support
+        </Text>
       </View>
 
       <ScrollView
@@ -82,32 +88,42 @@ export function HelpView({ onBack }: { onBack: () => void }) {
         {/* Top 2 Action Cards */}
         <View style={styles.cardsRow}>
           <TouchableOpacity
-            style={styles.topCard}
+            style={[styles.topCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleLiveChat}
             activeOpacity={0.75}
           >
-            <View style={styles.purpleIconCircle}>
-              <MessageSquare size={17} color="#818CF8" />
+            <View style={[styles.iconCircle, { backgroundColor: `${accentColor}1A` }]}>
+              <MessageSquare size={17} color={accentColor} />
             </View>
-            <Text style={styles.cardTitle}>Live Chat</Text>
-            <Text style={styles.cardSub}>Talk to support</Text>
+            <Text style={[styles.cardTitle, { fontSize: fonts.body, color: colors.textPrimary }]}>
+              Live Chat
+            </Text>
+            <Text style={[styles.cardSub, { fontSize: fonts.caption, color: colors.textMuted }]}>
+              Talk to support
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.topCard}
+            style={[styles.topCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleEmail}
             activeOpacity={0.75}
           >
-            <View style={styles.emeraldIconCircle}>
-              <Mail size={17} color="#34D399" />
+            <View style={[styles.iconCircle, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+              <Mail size={17} color="#10B981" />
             </View>
-            <Text style={styles.cardTitle}>Email Us</Text>
-            <Text style={styles.cardSub}>support@aura.ai</Text>
+            <Text style={[styles.cardTitle, { fontSize: fonts.body, color: colors.textPrimary }]}>
+              Email Us
+            </Text>
+            <Text style={[styles.cardSub, { fontSize: fonts.caption, color: colors.textMuted }]}>
+              support@aura.ai
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* FREQUENTLY ASKED */}
-        <Text style={styles.sectionHeader}>FREQUENTLY ASKED</Text>
+        <Text style={[styles.sectionHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
+          FREQUENTLY ASKED
+        </Text>
 
         <View style={styles.faqStack}>
           {FAQS.map((faq, idx) => {
@@ -115,24 +131,35 @@ export function HelpView({ onBack }: { onBack: () => void }) {
             return (
               <View
                 key={idx}
-                style={[styles.faqCard, isOpen && styles.faqCardOpen]}
+                style={[
+                  styles.faqCard,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  isOpen && {
+                    borderColor: accentColor,
+                    backgroundColor: `${accentColor}0D`,
+                  },
+                ]}
               >
                 <TouchableOpacity
                   style={styles.faqHeaderRow}
                   onPress={() => toggleAccordion(idx)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.faqQuestionText}>{faq.q}</Text>
+                  <Text style={[styles.faqQuestionText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                    {faq.q}
+                  </Text>
                   {isOpen ? (
-                    <ChevronUp size={16} color="#818CF8" />
+                    <ChevronUp size={16} color={accentColor} />
                   ) : (
-                    <ChevronDown size={16} color="rgba(255, 255, 255, 0.45)" />
+                    <ChevronDown size={16} color={colors.textMuted} />
                   )}
                 </TouchableOpacity>
 
                 {isOpen && (
-                  <View style={styles.answerContainer}>
-                    <Text style={styles.faqAnswerText}>{faq.a}</Text>
+                  <View style={[styles.answerContainer, { borderTopColor: colors.border }]}>
+                    <Text style={[styles.faqAnswerText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+                      {faq.a}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -147,7 +174,6 @@ export function HelpView({ onBack }: { onBack: () => void }) {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0A0D18',
   },
   navBar: {
     flexDirection: 'row',
@@ -161,14 +187,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   navTitle: {
-    fontSize: 20,
     fontWeight: '800',
-    color: '#F8FAFC',
   },
   scrollArea: {
     flex: 1,
@@ -184,43 +208,26 @@ const styles = StyleSheet.create({
   },
   topCard: {
     flex: 1,
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
-  purpleIconCircle: {
+  iconCircle: {
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: 'rgba(129, 140, 248, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  emeraldIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
   },
   cardTitle: {
-    color: '#F8FAFC',
-    fontSize: 15,
     fontWeight: '700',
     marginBottom: 3,
   },
   cardSub: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 12,
+    fontWeight: '500',
   },
   sectionHeader: {
-    color: 'rgba(255, 255, 255, 0.35)',
-    fontSize: 11,
     letterSpacing: 1.5,
     fontWeight: '700',
     marginTop: 24,
@@ -231,16 +238,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   faqCard: {
-    backgroundColor: 'rgba(23, 27, 46, 0.75)',
     borderRadius: 18,
     paddingVertical: 18,
     paddingHorizontal: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  faqCardOpen: {
-    borderColor: 'rgba(129, 140, 248, 0.35)',
-    backgroundColor: 'rgba(26, 31, 56, 0.85)',
   },
   faqHeaderRow: {
     flexDirection: 'row',
@@ -248,8 +249,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   faqQuestionText: {
-    color: '#F8FAFC',
-    fontSize: 14,
     fontWeight: '600',
     flex: 1,
     paddingRight: 12,
@@ -258,11 +257,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   faqAnswerText: {
-    color: 'rgba(255, 255, 255, 0.65)',
-    fontSize: 13,
     lineHeight: 20,
   },
 });

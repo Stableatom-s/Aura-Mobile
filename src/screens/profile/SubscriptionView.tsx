@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { Check, Star } from 'lucide-react-native';
 import { BackHeader } from '@/components/common/BackHeader';
 import { GradientButton } from '@/components/ui/GradientButton';
+import { useAppTheme } from '@/context/ThemeContext';
 
 interface SubscriptionViewProps {
   onBack: () => void;
@@ -18,8 +19,10 @@ const PERKS = [
 ];
 
 export function SubscriptionView({ onBack, isPremium }: SubscriptionViewProps) {
+  const { colors, fonts, accentColor } = useAppTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <BackHeader title="Aura Plus" onBack={onBack} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -27,25 +30,43 @@ export function SubscriptionView({ onBack, isPremium }: SubscriptionViewProps) {
           <View style={styles.starCircle}>
             <Star size={24} color="#FBBF24" fill="#FBBF24" />
           </View>
-          <Text style={styles.planTitle}>Aura Plus</Text>
-          <Text style={styles.priceTag}>₹299 <Text style={styles.period}>/ month</Text></Text>
-          <Text style={styles.subtext}>Cancel or adjust your membership anytime.</Text>
+          <Text style={[styles.planTitle, { fontSize: fonts.header, color: colors.textPrimary }]}>
+            Aura Plus
+          </Text>
+          <Text style={[styles.priceTag, { color: accentColor }]}>
+            ₹299{' '}
+            <Text style={[styles.period, { fontSize: fonts.body, color: colors.textMuted }]}>
+              / month
+            </Text>
+          </Text>
+          <Text style={[styles.subtext, { fontSize: fonts.caption, color: colors.textSecondary }]}>
+            Cancel or adjust your membership anytime.
+          </Text>
         </View>
 
-        <View style={styles.perksCard}>
-          <Text style={styles.perksHeader}>WHAT'S INCLUDED</Text>
+        <View style={[styles.perksCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.perksHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
+            WHAT'S INCLUDED
+          </Text>
           {PERKS.map((p, idx) => (
             <View key={idx} style={styles.perkRow}>
-              <View style={styles.checkIcon}>
-                <Check size={14} color="#34D399" />
+              <View style={[styles.checkIcon, { backgroundColor: `${accentColor}20` }]}>
+                <Check size={14} color={accentColor} />
               </View>
-              <Text style={styles.perkText}>{p}</Text>
+              <Text style={[styles.perkText, { fontSize: fonts.body, color: colors.textPrimary }]}>
+                {p}
+              </Text>
             </View>
           ))}
         </View>
 
-        <View style={styles.infoBanner}>
-          <Text style={styles.infoText}>
+        <View
+          style={[
+            styles.infoBanner,
+            { backgroundColor: `${accentColor}12`, borderColor: `${accentColor}33` },
+          ]}
+        >
+          <Text style={[styles.infoText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
             Subscriptions are managed centrally via your secure Aura account on web.
           </Text>
         </View>
@@ -71,36 +92,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  planTitle: { fontSize: 24, fontWeight: '800', color: '#F8FAFC' },
-  priceTag: { fontSize: 32, fontWeight: '900', color: '#818CF8', marginTop: 4 },
-  period: { fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: '500' },
-  subtext: { color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 4 },
+  planTitle: { fontWeight: '800' },
+  priceTag: { fontSize: 32, fontWeight: '900', marginTop: 4 },
+  period: { fontWeight: '500' },
+  subtext: { marginTop: 4 },
   perksCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
     marginBottom: 20,
   },
-  perksHeader: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginBottom: 16 },
+  perksHeader: { fontWeight: '700', letterSpacing: 1.5, marginBottom: 16 },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
   checkIcon: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(52,211,153,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  perkText: { color: '#F8FAFC', fontSize: 13, flex: 1, lineHeight: 18 },
+  perkText: { flex: 1, lineHeight: 18 },
   infoBanner: {
-    backgroundColor: 'rgba(129,140,248,0.1)',
     borderRadius: 14,
     padding: 14,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(129,140,248,0.2)',
   },
-  infoText: { color: '#C4B5FD', fontSize: 12, textAlign: 'center', lineHeight: 18 },
+  infoText: { textAlign: 'center', lineHeight: 18 },
 });
