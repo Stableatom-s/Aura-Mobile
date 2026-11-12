@@ -9,14 +9,16 @@ interface AdminTopBarProps {
   activeRole: RoleKey;
   users: User[];
   onOpenUser: (userId: string) => void;
+  currentAdmin?: { name: string; email?: string };
 }
 
 export function AdminTopBar({
   title,
   subtitle,
   activeRole,
-  users,
+  users = [],
   onOpenUser,
+  currentAdmin,
 }: AdminTopBarProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -33,13 +35,16 @@ export function AdminTopBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const results = query.trim()
-    ? users.filter(
-        (u) =>
-          u.name.toLowerCase().includes(query.toLowerCase()) ||
-          u.email.toLowerCase().includes(query.toLowerCase()) ||
-          u.id.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 6)
+  const normalizedQuery = query.trim().toLowerCase();
+  const results = normalizedQuery
+    ? users
+        .filter(
+          (u) =>
+            (u.name || "").toLowerCase().includes(normalizedQuery) ||
+            (u.email || "").toLowerCase().includes(normalizedQuery) ||
+            (u.id || "").toLowerCase().includes(normalizedQuery)
+        )
+        .slice(0, 6)
     : [];
 
   const handleSelect = (userId: string) => {
@@ -48,12 +53,16 @@ export function AdminTopBar({
     setIsOpen(false);
   };
 
-  const adminName = activeRole === "super" ? "Priya Raman" : ROLES[activeRole]?.label || "Staff Admin";
-  const initials = adminName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2);
+  const roleLabel = ROLES[activeRole]?.label || "Administrator";
+  const adminDisplayName = currentAdmin?.name?.trim() || roleLabel;
+  const initials =
+    adminDisplayName
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "AD";
 
   return (
     <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/[0.06] bg-[#070A17]/80 px-6 backdrop-blur-md">
@@ -83,7 +92,7 @@ export function AdminTopBar({
           </div>
 
           {/* Search Results Dropdown */}
-          {isOpen && query.trim() && (
+          {isOpen && normalizedQuery && (
             <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-white/10 bg-[#0B1021] p-2 shadow-2xl backdrop-blur-xl z-50 overflow-hidden divide-y divide-white/[0.04]">
               {results.length === 0 ? (
                 <div className="p-3 text-center text-xs text-slate-500">
@@ -91,11 +100,16 @@ export function AdminTopBar({
                 </div>
               ) : (
                 results.map((u) => {
-                  const userInitials = u.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2);
+                  const displayName = u.name || u.email || "Unknown User";
+                  const userInitials =
+                    displayName
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2) || "U";
+                  const avatarHue = typeof u.hue === "number" ? u.hue : 240;
 
                   return (
                     <button
@@ -107,7 +121,7 @@ export function AdminTopBar({
                       <span
                         className="grid size-8 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white shadow"
                         style={{
-                          background: `linear-gradient(135deg, hsl(${u.hue} 70% 50%), hsl(${(u.hue + 40) % 360} 70% 35%))`,
+                          background: `linear-gradient(135deg, hsl(${avatarHue} 70% 50%), hsl(${(avatarHue + 40) % 360} 70% 35%))`,
                         }}
                       >
                         {userInitials}
@@ -115,7 +129,7 @@ export function AdminTopBar({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
                           <p className="font-semibold text-slate-100 group-hover:text-indigo-300 transition truncate">
-                            {u.name}
+                            {displayName}
                           </p>
                           <span className="font-mono text-[10px] text-slate-500 shrink-0 ml-2">
                             {u.id}
@@ -137,8 +151,8 @@ export function AdminTopBar({
             {initials}
           </span>
           <div className="text-left">
-            <p className="text-xs font-semibold text-white leading-tight">{adminName}</p>
-            <p className="text-[10px] text-slate-400">{ROLES[activeRole]?.label}</p>
+            <p className="text-xs font-semibold text-white leading-tight">{adminDisplayName}</p>
+            <p className="text-[10px] text-slate-400">{roleLabel}</p>
           </div>
         </div>
       </div>

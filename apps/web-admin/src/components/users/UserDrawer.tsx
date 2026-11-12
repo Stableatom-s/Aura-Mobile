@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   X,
@@ -7,16 +7,13 @@ import {
   Ban,
   Download,
   Trash2,
-  Mic,
-  MessageSquare,
-  Smile,
-  LogIn,
-  Wind,
-  Sliders,
+  BookOpen,
   Smartphone,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import type { User } from "../../data";
+
+const API_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:5000/api";
 
 interface UserDrawerProps {
   user: User;
@@ -26,48 +23,112 @@ interface UserDrawerProps {
 
 type DrawerTab = "overview" | "activity" | "content" | "actions";
 
-const FALLBACK_EXCERPTS = [
-  { who: "user", text: "I've been feeling pretty overwhelmed with work lately and I can't switch off at night." },
-  { who: "aura", text: "That sounds exhausting. Would it help to unwind with a short breathing exercise before bed?" },
-  { who: "user", text: "Maybe. I just keep replaying everything in my head." },
-];
+interface UserJournalRecord {
+  id: string;
+  emotion: string;
+  reflectionText: string;
+  createdAt: string;
+}
 
 export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
   const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
   const [reason, setReason] = useState("");
   const [revealed, setRevealed] = useState(false);
+  const [userJournals, setUserJournals] = useState<UserJournalRecord[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
-  const initials = user.name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2);
+  // Reset reveal state and fetch live user activity/journals when inspected user changes
+  useEffect(() => {
+    setRevealed(false);
+    setReason("");
+    setUserJournals([]);
+
+    let isMounted = true;
+    async function fetchUserDetails() {
+      try {
+        setLoadingDetails(true);
+        const res = await fetch(`${API_BASE}/admin/users/${user.id}/details`);
+        const data = await res.json();
+        if (isMounted && data?.success) {
+          setUserJournals(data.journals || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user details:", err);
+      } finally {
+        if (isMounted) setLoadingDetails(false);
+      }
+    }
+
+    fetchUserDetails();
+    return () => {
+      isMounted = false;
+    };
+  }, [user.id]);
+
+  const displayName = user.name || user.email || "Unknown User";
+  const initials =
+    displayName
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
+
+  const moodSeries = Array.isArray(user.mood) ? user.mood : [];
 
   const moodChartData = useMemo(() => {
-    return (user.mood || [3, 4, 3, 5, 4, 3, 4, 3, 4, 3, 4, 3, 4, 4]).map((val, idx) => ({
-      d: idx === 0 ? "D1" : idx === 3 ? "D4" : idx === 6 ? "D7" : idx === 9 ? "D10" : idx === 12 ? "D13" : "",
+    return moodSeries.map((val, idx) => ({
+      d: `D${idx + 1}`,
       score: val,
     }));
-  }, [user.mood]);
+  }, [moodSeries]);
 
-  const avgMood = user.mood && user.mood.length > 0
-    ? (user.mood.reduce((acc, curr) => acc + curr, 0) / user.mood.length).toFixed(1)
-    : "3.5";
+  const avgMood =
+    moodSeries.length > 0
+      ? (moodSeries.reduce((acc, curr) => acc + curr, 0) / moodSeries.length).toFixed(1)
+      : "—";
 
-  const activities = [
-    { id: 1, icon: Mic, label: "Voice session", meta: "3 h ago · 16 min" },
-    { id: 2, icon: MessageSquare, label: "Chat session", meta: "9 h ago · 26 min · 29 msgs" },
-    { id: 3, icon: MessageSquare, label: "Chat session", meta: "10 h ago · 10 min · 21 msgs" },
-    { id: 4, icon: Smile, label: "Mood check-in", meta: "15 h ago · Good" },
-    { id: 5, icon: LogIn, label: `Signed in with ${user.provider || "Google"} · ${user.device || "Pixel 8"}`, meta: "20 h ago" },
-    { id: 6, icon: Smile, label: "Mood check-in", meta: "24 h ago · Rough" },
-    { id: 7, icon: Wind, label: "Meditation completed", meta: "1 d ago · 12 min" },
-    { id: 8, icon: LogIn, label: `Signed in with ${user.provider || "Google"} · ${user.device || "Pixel 8"}`, meta: "1 d ago" },
-    { id: 9, icon: Smile, label: "Mood check-in", meta: "2 d ago · Good" },
-    { id: 10, icon: Smile, label: "Mood check-in", meta: "2 d ago · Okay" },
-    { id: 11, icon: Sliders, label: "Changed notification settings", meta: "2 d ago" },
-    { id: 12, icon: Smile, label: "Mood check-in", meta: "2 d ago · Good" },
-  ];
+  const handleRevealExcerpts = async () => {
+    if (!reason) return;
+    setRevealed(true);
+    try {
+      await fetch(`${API_BASE}/admin/users/${user.id}/reveal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+    } catch (err) {
+      console.error("Failed to record excerpt reveal audit log:", err);
+    }
+  };
+
+  const handleExportGDPR = () => {
+    const bundle = {
+      exportedAt: new Date().toISOString(),
+      profile: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        provider: user.provider,
+        status: user.status,
+        country: user.country,
+        device: user.device,
+      },
+      journals: userJournals,
+    };
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], {
+      type: "application/json;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `aura_gdpr_${user.id}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <>
@@ -100,7 +161,7 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
               {initials}
             </span>
             <div>
-              <h2 className="text-lg font-bold text-white font-['Outfit']">{user.name}</h2>
+              <h2 className="text-lg font-bold text-white font-['Outfit']">{displayName}</h2>
               <p className="font-mono text-xs text-slate-400">{user.email}</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 ring-1 ring-inset ring-emerald-500/30">
@@ -148,29 +209,30 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <div className="space-y-6">
-              {/* Metric Cards Grid */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0E1328] p-3.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sessions</p>
-                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">{user.sessions || 0}</p>
+                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">{user.sessions ?? 0}</p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0E1328] p-3.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Messages</p>
                   <p className="mt-2 text-xl font-bold text-white font-['Outfit']">
-                    {(user.messages || 0).toLocaleString()}
+                    {(user.messages ?? 0).toLocaleString()}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0E1328] p-3.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Voice Min</p>
-                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">{user.voiceMin || 0}</p>
+                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">{user.voiceMin ?? 0}</p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0E1328] p-3.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Journals</p>
-                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">{user.journals || 0}</p>
+                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">
+                    {userJournals.length || user.journals || 0}
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0E1328] p-3.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Streak</p>
-                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">{user.streak || 0}d</p>
+                  <p className="mt-2 text-xl font-bold text-white font-['Outfit']">{user.streak ?? 0}d</p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0E1328] p-3.5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Avg Mood</p>
@@ -181,43 +243,49 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
               {/* Mood Sparkline Curve */}
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2.5">
-                  Mood · Last 14 Days
+                  Mood · Recorded Check-ins
                 </p>
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0E1328] p-4">
-                  <div className="h-28 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={moodChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="drawerMoodGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#A855F7" stopOpacity={0.45} />
-                            <stop offset="100%" stopColor="#A855F7" stopOpacity={0.0} />
-                          </linearGradient>
-                        </defs>
-                        <XAxis
-                          dataKey="d"
-                          stroke="#64748B"
-                          fontSize={10}
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <YAxis
-                          domain={[1, 5]}
-                          stroke="#64748B"
-                          fontSize={10}
-                          tickLine={false}
-                          axisLine={false}
-                          ticks={[1, 3, 5]}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="score"
-                          stroke="#A855F7"
-                          strokeWidth={2}
-                          fill="url(#drawerMoodGradient)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {moodChartData.length < 2 ? (
+                    <div className="flex h-28 items-center justify-center text-xs text-slate-500">
+                      Not enough mood check-ins recorded yet.
+                    </div>
+                  ) : (
+                    <div className="h-28 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={moodChartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="drawerMoodGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#A855F7" stopOpacity={0.45} />
+                              <stop offset="100%" stopColor="#A855F7" stopOpacity={0.0} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis
+                            dataKey="d"
+                            stroke="#64748B"
+                            fontSize={10}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            domain={[1, 5]}
+                            stroke="#64748B"
+                            fontSize={10}
+                            tickLine={false}
+                            axisLine={false}
+                            ticks={[1, 3, 5]}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="score"
+                            stroke="#A855F7"
+                            strokeWidth={2}
+                            fill="url(#drawerMoodGradient)"
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -229,30 +297,34 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
                 </div>
                 <div className="flex items-center justify-between py-3 text-slate-400">
                   <span>Sign-in method</span>
-                  <span className="text-slate-200">{user.provider}</span>
+                  <span className="text-slate-200">{user.provider || "—"}</span>
                 </div>
                 <div className="flex items-center justify-between py-3 text-slate-400">
                   <span>Country</span>
-                  <span className="text-slate-200">{user.country}</span>
+                  <span className="text-slate-200">{user.country || "—"}</span>
                 </div>
                 <div className="flex items-center justify-between py-3 text-slate-400">
                   <span>Joined</span>
-                  <span className="text-slate-200">{user.joinedDays} days ago</span>
+                  <span className="text-slate-200">
+                    {typeof user.joinedDays === "number" ? `${user.joinedDays} days ago` : "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between py-3 text-slate-400">
                   <span>Last active</span>
-                  <span className="text-slate-200">{user.lastMin} min ago</span>
+                  <span className="text-slate-200">
+                    {typeof user.lastMin === "number" ? `${user.lastMin} min ago` : "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between py-3 text-slate-400">
                   <span>Device</span>
                   <span className="flex items-center gap-1.5 text-slate-200">
                     <Smartphone className="size-3.5 text-slate-400" />
-                    {user.device} · {user.os}
+                    {[user.device, user.os].filter(Boolean).join(" · ") || "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-3 text-slate-400">
                   <span>App version</span>
-                  <span className="font-mono text-slate-200">{user.version || "2.8.1"}</span>
+                  <span className="font-mono text-slate-200">{user.version || "—"}</span>
                 </div>
               </div>
             </div>
@@ -260,18 +332,34 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
 
           {/* TAB 2: ACTIVITY */}
           {activeTab === "activity" && (
-            <div className="relative pl-6 space-y-6 before:absolute before:bottom-3 before:left-2.5 before:top-3 before:w-[1px] before:bg-white/[0.08]">
-              {activities.map((item) => (
-                <div key={item.id} className="relative flex items-start gap-4">
-                  <div className="absolute -left-[30px] grid size-7 place-items-center rounded-full border border-white/10 bg-[#0A0E21] text-indigo-400">
-                    <item.icon className="size-3.5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-white leading-tight">{item.label}</p>
-                    <p className="mt-0.5 font-mono text-[11px] text-slate-500">{item.meta}</p>
-                  </div>
+            <div>
+              {loadingDetails ? (
+                <p className="py-10 text-center text-xs text-slate-500">
+                  Loading user activity from database...
+                </p>
+              ) : userJournals.length === 0 ? (
+                <p className="py-10 text-center text-xs text-slate-500">
+                  No recorded journal or session activity for this user yet.
+                </p>
+              ) : (
+                <div className="relative pl-6 space-y-6 before:absolute before:bottom-3 before:left-2.5 before:top-3 before:w-[1px] before:bg-white/[0.08]">
+                  {userJournals.map((entry) => (
+                    <div key={entry.id} className="relative flex items-start gap-4">
+                      <div className="absolute -left-[30px] grid size-7 place-items-center rounded-full border border-white/10 bg-[#0A0E21] text-indigo-400">
+                        <BookOpen className="size-3.5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-white leading-tight">
+                          Journal check-in · {entry.emotion}
+                        </p>
+                        <p className="mt-0.5 font-mono text-[11px] text-slate-500">
+                          {new Date(entry.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
 
@@ -312,7 +400,7 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
                   <button
                     type="button"
                     disabled={!reason}
-                    onClick={() => setRevealed(true)}
+                    onClick={handleRevealExcerpts}
                     className="flex w-fit items-center gap-2 rounded-xl bg-[#525FE1] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#6366F1] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20 cursor-pointer"
                   >
                     <Eye className="size-3.5" />
@@ -324,20 +412,28 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
                   <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3 text-xs text-indigo-200">
                     Excerpts revealed under audit reason: <strong>{reason}</strong>
                   </div>
-                  <div className="space-y-2.5">
-                    {FALLBACK_EXCERPTS.map((msg, i) => (
-                      <div
-                        key={i}
-                        className={`rounded-2xl p-3.5 text-xs leading-relaxed max-w-[85%] ${
-                          msg.who === "user"
-                            ? "ml-auto bg-[#525FE1] text-white"
-                            : "bg-[#0E1328] border border-white/[0.06] text-slate-200"
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
-                    ))}
-                  </div>
+                  {userJournals.length === 0 ? (
+                    <p className="py-6 text-center text-xs text-slate-500">
+                      No journal entries stored for this user.
+                    </p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {userJournals.slice(0, 10).map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="rounded-2xl bg-[#0E1328] border border-white/[0.06] p-3.5 text-xs leading-relaxed text-slate-200"
+                        >
+                          <div className="mb-1 flex items-center justify-between text-[10px] font-mono text-indigo-300">
+                            <span>{entry.emotion.toUpperCase()}</span>
+                            <span className="text-slate-500">
+                              {new Date(entry.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p>{entry.reflectionText}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -382,9 +478,7 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    alert(`Exporting complete GDPR data bundle for ${user.email}`);
-                  }}
+                  onClick={handleExportGDPR}
                   className="rounded-xl bg-[#18203E] px-4 py-1.5 text-xs font-medium text-slate-200 hover:bg-[#202B52] transition border border-white/5 cursor-pointer"
                 >
                   Run
@@ -405,7 +499,7 @@ export function UserDrawer({ user, onClose, onPatchUser }: UserDrawerProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(`Schedule ${user.name} for deletion?`)) {
+                    if (confirm(`Schedule ${displayName} for deletion?`)) {
                       onPatchUser?.(user.id, { status: "Pending deletion" });
                     }
                   }}

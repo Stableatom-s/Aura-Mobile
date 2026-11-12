@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
-import { Search, Download, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, Download, ArrowUp } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, YAxis } from "recharts";
-import { ago, type User, type Plan, type Status } from "../data";
+import { ago, type User } from "../data";
 
 interface UsersPageProps {
-  users: User[];
+  users?: User[];
   onOpenUser: (userId: string) => void;
 }
 
-export function UsersPage({ users, onOpenUser }: UsersPageProps) {
+export function UsersPage({ users = [], onOpenUser }: UsersPageProps) {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -19,13 +19,13 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
     return users.filter((u) => {
       const matchesSearch =
         !q ||
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.id.toLowerCase().includes(q);
+        (u.name || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q) ||
+        (u.id || "").toLowerCase().includes(q);
 
-      const matchesPlan = planFilter === "All" || u.plan === planFilter;
-      const matchesStatus = statusFilter === "All" || u.status === statusFilter;
-      const matchesSignin = signinFilter === "All" || u.provider === signinFilter;
+      const matchesPlan = planFilter === "All" || (u.plan || "Free") === planFilter;
+      const matchesStatus = statusFilter === "All" || (u.status || "Active") === statusFilter;
+      const matchesSignin = signinFilter === "All" || (u.provider || "Google") === signinFilter;
 
       return matchesSearch && matchesPlan && matchesStatus && matchesSignin;
     });
@@ -33,8 +33,9 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
 
   const handleExportCSV = () => {
     const headers = "User ID,Name,Email,Plan,Sign-in,Status,Sessions,Joined,Last Active Min,Risk";
-    const rows = filteredUsers.map((u) =>
-      `"${u.id}","${u.name}","${u.email}","${u.plan}","${u.provider}","${u.status}",${u.sessions},"${u.joinedDays}d ago",${u.lastMin},"${u.risk}"`
+    const rows = filteredUsers.map(
+      (u) =>
+        `"${u.id}","${u.name || ""}","${u.email || ""}","${u.plan || "Free"}","${u.provider || ""}","${u.status || "Active"}",${u.sessions ?? 0},"${u.joinedDays ?? 0}d ago",${u.lastMin ?? 0},"${u.risk || "Normal"}"`
     );
     const blob = new Blob([[headers, ...rows].join("\n")], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -48,11 +49,9 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
 
   return (
     <div className="space-y-4 pb-12">
-      {/* Outer Card Container */}
       <div className="rounded-2xl border border-white/[0.08] bg-[#0E1326] shadow-xl overflow-hidden">
         {/* Filter Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-white/[0.06]">
-          {/* Search Input */}
           <div className="relative min-w-[280px] max-w-md flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
             <input
@@ -64,9 +63,7 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
             />
           </div>
 
-          {/* Filter Dropdowns and Export Button */}
           <div className="flex flex-wrap items-center gap-3 text-xs">
-            {/* Plan Filter */}
             <div className="flex items-center gap-2">
               <span className="text-slate-400 font-medium">Plan</span>
               <div className="relative">
@@ -86,7 +83,6 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
               </div>
             </div>
 
-            {/* Status Filter */}
             <div className="flex items-center gap-2">
               <span className="text-slate-400 font-medium">Status</span>
               <div className="relative">
@@ -106,7 +102,6 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
               </div>
             </div>
 
-            {/* Sign-in Filter */}
             <div className="flex items-center gap-2">
               <span className="text-slate-400 font-medium">Sign-in</span>
               <div className="relative">
@@ -125,11 +120,11 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
               </div>
             </div>
 
-            {/* Export CSV Button */}
             <button
               type="button"
               onClick={handleExportCSV}
-              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#080C1B] px-3.5 py-2 font-medium text-slate-200 transition hover:bg-white/[0.05] hover:text-white cursor-pointer"
+              disabled={filteredUsers.length === 0}
+              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#080C1B] px-3.5 py-2 font-medium text-slate-200 transition hover:bg-white/[0.05] hover:text-white cursor-pointer disabled:opacity-40"
             >
               <Download className="size-3.5 text-slate-400" />
               <span>Export CSV</span>
@@ -158,119 +153,137 @@ export function UsersPage({ users, onOpenUser }: UsersPageProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
-              {filteredUsers.map((u) => {
-                const initials = u.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .slice(0, 2);
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-12 text-center text-slate-500">
+                    No users found in database matching current filters.
+                  </td>
+                </tr>
+              ) : (
+                filteredUsers.map((u) => {
+                  const displayName = u.name || u.email || "Unknown User";
+                  const initials =
+                    displayName
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2) || "U";
+                  const hue = typeof u.hue === "number" ? u.hue : 240;
+                  const plan = u.plan || "Free";
+                  const status = u.status || "Active";
+                  const risk = u.risk || "Normal";
+                  const moodSeries = Array.isArray(u.mood) ? u.mood : [];
 
-                return (
-                  <tr
-                    key={u.id}
-                    onClick={() => onOpenUser(u.id)}
-                    className="group cursor-pointer transition hover:bg-white/[0.035]"
-                  >
-                    {/* User Identity Column */}
-                    <td className="py-3.5 pl-6 pr-4">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold text-white shadow-sm"
-                          style={{
-                            background: `linear-gradient(135deg, hsl(${u.hue} 70% 50%), hsl(${(u.hue + 45) % 360} 70% 35%))`,
-                          }}
-                        >
-                          {initials}
-                        </span>
-                        <div>
-                          <p className="font-semibold text-slate-100 group-hover:text-indigo-300 transition">
-                            {u.name}
-                          </p>
-                          <p className="font-mono text-[11px] text-slate-500">{u.email}</p>
+                  return (
+                    <tr
+                      key={u.id}
+                      onClick={() => onOpenUser(u.id)}
+                      className="group cursor-pointer transition hover:bg-white/[0.035]"
+                    >
+                      <td className="py-3.5 pl-6 pr-4">
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold text-white shadow-sm"
+                            style={{
+                              background: `linear-gradient(135deg, hsl(${hue} 70% 50%), hsl(${(hue + 45) % 360} 70% 35%))`,
+                            }}
+                          >
+                            {initials}
+                          </span>
+                          <div>
+                            <p className="font-semibold text-slate-100 group-hover:text-indigo-300 transition">
+                              {displayName}
+                            </p>
+                            <p className="font-mono text-[11px] text-slate-500">{u.email}</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Plan Badge */}
-                    <td className="px-4 py-3.5">
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                          u.plan === "Premium"
-                            ? "bg-[#6B21A8]/30 text-[#D8B4FE] ring-1 ring-[#9333EA]/40"
-                            : u.plan === "Plus"
-                            ? "bg-[#1E1B4B]/60 text-[#A5B4FC] ring-1 ring-[#6366F1]/40"
-                            : "bg-white/[0.04] text-slate-400 ring-1 ring-white/10"
-                        }`}
-                      >
-                        {u.plan}
-                      </span>
-                    </td>
+                      <td className="px-4 py-3.5">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                            plan === "Premium"
+                              ? "bg-[#6B21A8]/30 text-[#D8B4FE] ring-1 ring-[#9333EA]/40"
+                              : plan === "Plus"
+                              ? "bg-[#1E1B4B]/60 text-[#A5B4FC] ring-1 ring-[#6366F1]/40"
+                              : "bg-white/[0.04] text-slate-400 ring-1 ring-white/10"
+                          }`}
+                        >
+                          {plan}
+                        </span>
+                      </td>
 
-                    {/* Sign-in Method */}
-                    <td className="px-4 py-3.5 font-medium text-slate-300">{u.provider}</td>
+                      <td className="px-4 py-3.5 font-medium text-slate-300">
+                        {u.provider || "Google"}
+                      </td>
 
-                    {/* Status Badge */}
-                    <td className="px-4 py-3.5">
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                          u.status === "Active"
-                            ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30"
-                            : u.status === "Suspended"
-                            ? "bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30"
-                            : "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/30"
-                        }`}
-                      >
-                        {u.status}
-                      </span>
-                    </td>
+                      <td className="px-4 py-3.5">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                            status === "Active"
+                              ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/30"
+                              : status === "Suspended"
+                              ? "bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/30"
+                              : "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/30"
+                          }`}
+                        >
+                          {status}
+                        </span>
+                      </td>
 
-                    {/* 14d Mood Sparkline Curve */}
-                    <td className="px-4 py-3.5">
-                      <div className="h-6 w-24">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={u.mood.map((v) => ({ v }))}>
-                            <Line
-                              type="monotone"
-                              dataKey="v"
-                              stroke="#818CF8"
-                              strokeWidth={1.8}
-                              dot={false}
-                              isAnimationActive={false}
-                            />
-                            <YAxis hide domain={[1, 5]} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </td>
+                      <td className="px-4 py-3.5">
+                        {moodSeries.length < 2 ? (
+                          <span className="font-mono text-[11px] text-slate-600">—</span>
+                        ) : (
+                          <div className="h-6 w-24">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={moodSeries.map((v) => ({ v }))}>
+                                <Line
+                                  type="monotone"
+                                  dataKey="v"
+                                  stroke="#818CF8"
+                                  strokeWidth={1.8}
+                                  dot={false}
+                                  isAnimationActive={false}
+                                />
+                                <YAxis hide domain={[1, 5]} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                      </td>
 
-                    {/* Sessions */}
-                    <td className="px-4 py-3.5 text-right font-mono text-slate-300">
-                      {u.sessions}
-                    </td>
+                      <td className="px-4 py-3.5 text-right font-mono text-slate-300">
+                        {u.sessions ?? 0}
+                      </td>
 
-                    {/* Joined */}
-                    <td className="px-4 py-3.5 font-mono text-slate-400">{u.joinedDays}d ago</td>
+                      <td className="px-4 py-3.5 font-mono text-slate-400">
+                        {typeof u.joinedDays === "number" ? `${u.joinedDays}d ago` : "—"}
+                      </td>
 
-                    {/* Last Active */}
-                    <td className="px-4 py-3.5 font-mono text-slate-400">{ago(u.lastMin)}</td>
+                      <td className="px-4 py-3.5 font-mono text-slate-400">
+                        {typeof u.lastMin === "number" ? ago(u.lastMin) : "—"}
+                      </td>
 
-                    {/* Risk Badge */}
-                    <td className="py-3.5 pl-4 pr-6">
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                          u.risk === "High"
-                            ? "bg-rose-500/15 text-rose-400 ring-1 ring-rose-500/30"
-                            : u.risk === "Watch"
-                            ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
-                            : "bg-white/[0.04] text-slate-400 ring-1 ring-white/10"
-                        }`}
-                      >
-                        {u.risk}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="py-3.5 pl-4 pr-6">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                            risk === "High"
+                              ? "bg-rose-500/15 text-rose-400 ring-1 ring-rose-500/30"
+                              : risk === "Watch"
+                              ? "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30"
+                              : "bg-white/[0.04] text-slate-400 ring-1 ring-white/10"
+                          }`}
+                        >
+                          {risk}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

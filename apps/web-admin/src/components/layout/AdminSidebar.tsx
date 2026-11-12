@@ -26,7 +26,7 @@ export function AdminSidebar({
   onNavigate,
   activeRole,
   onRoleChange,
-  openFlagsCount = 4,
+  openFlagsCount = 0,
   can,
 }: AdminSidebarProps) {
   const allNavItems: {
@@ -98,7 +98,7 @@ export function AdminSidebar({
         })}
       </nav>
 
-      {/* Bottom Role bypass selector */}
+      {/* Bottom Role selector */}
       <div className="mt-auto pt-4 border-t border-white/[0.06]">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Viewing as</p>
         <div className="relative mt-1.5">

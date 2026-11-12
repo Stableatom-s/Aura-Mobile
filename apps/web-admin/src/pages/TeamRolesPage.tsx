@@ -1,50 +1,14 @@
-import { UserPlus, Check } from "lucide-react";
+import { useState } from "react";
+import { UserPlus, Check, X } from "lucide-react";
 
-interface AdminMember {
+export interface AdminMember {
+  id?: string;
   name: string;
   email: string;
   role: string;
   twoFactor: boolean;
   lastSignIn: string;
 }
-
-const ADMINS: AdminMember[] = [
-  {
-    name: "Priya Raman",
-    email: "priya@aura.ai",
-    role: "Super Admin",
-    twoFactor: true,
-    lastSignIn: "2 min ago",
-  },
-  {
-    name: "Dana Whitfield",
-    email: "dana@aura.ai",
-    role: "Trust & Safety",
-    twoFactor: true,
-    lastSignIn: "18 min ago",
-  },
-  {
-    name: "Marcus Oyelaran",
-    email: "marcus@aura.ai",
-    role: "Trust & Safety",
-    twoFactor: true,
-    lastSignIn: "3 h ago",
-  },
-  {
-    name: "Jun Takeda",
-    email: "jun@aura.ai",
-    role: "Support Agent",
-    twoFactor: true,
-    lastSignIn: "40 min ago",
-  },
-  {
-    name: "Elise Moreau",
-    email: "elise@aura.ai",
-    role: "Product Analyst",
-    twoFactor: false,
-    lastSignIn: "Yesterday",
-  },
-];
 
 interface MatrixRow {
   permission: string;
@@ -113,17 +77,49 @@ const MATRIX_DATA: MatrixRow[] = [
   },
 ];
 
-export function TeamRolesPage() {
+interface TeamRolesPageProps {
+  admins?: AdminMember[];
+  onInviteAdmin?: (payload: { name: string; email: string; role: string }) => Promise<void> | void;
+}
+
+export function TeamRolesPage({
+  admins = [],
+  onInviteAdmin,
+}: TeamRolesPageProps) {
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("Trust & Safety");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim() || !inviteName.trim() || submitting) return;
+
+    try {
+      setSubmitting(true);
+      await onInviteAdmin?.({
+        name: inviteName.trim(),
+        email: inviteEmail.trim(),
+        role: inviteRole,
+      });
+      setInviteName("");
+      setInviteEmail("");
+      setInviteOpen(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* 1. Administrators Table Card */}
       <div className="rounded-2xl border border-white/[0.08] bg-[#0E1326] shadow-xl overflow-hidden">
-        {/* Header */}
         <div className="flex items-center justify-between p-6 pb-4">
           <h3 className="text-sm font-semibold tracking-wide text-white">Administrators</h3>
           <button
             type="button"
-            onClick={() => alert("Invite admin modal")}
+            onClick={() => setInviteOpen(true)}
             className="flex items-center gap-1.5 rounded-xl bg-[#6366F1] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition hover:bg-[#545CEB] cursor-pointer"
           >
             <UserPlus className="size-3.5" />
@@ -131,7 +127,6 @@ export function TeamRolesPage() {
           </button>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px] text-left text-xs">
             <thead className="border-b border-white/[0.06] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -143,27 +138,35 @@ export function TeamRolesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
-              {ADMINS.map((admin) => (
-                <tr key={admin.email} className="transition hover:bg-white/[0.02]">
-                  <td className="py-4 pl-6 pr-4">
-                    <p className="font-semibold text-slate-100">{admin.name}</p>
-                    <p className="font-mono text-[11px] text-slate-500">{admin.email}</p>
-                  </td>
-                  <td className="px-4 py-4 font-medium text-slate-200">{admin.role}</td>
-                  <td className="px-4 py-4">
-                    <span
-                      className={`text-xs font-medium ${
-                        admin.twoFactor ? "text-emerald-400" : "text-amber-400"
-                      }`}
-                    >
-                      {admin.twoFactor ? "Enabled" : "Not set up"}
-                    </span>
-                  </td>
-                  <td className="py-4 pl-4 pr-6 font-mono text-slate-400">
-                    {admin.lastSignIn}
+              {admins.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-10 text-center text-slate-500">
+                    No administrators registered in database yet.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                admins.map((admin) => (
+                  <tr key={admin.email} className="transition hover:bg-white/[0.02]">
+                    <td className="py-4 pl-6 pr-4">
+                      <p className="font-semibold text-slate-100">{admin.name}</p>
+                      <p className="font-mono text-[11px] text-slate-500">{admin.email}</p>
+                    </td>
+                    <td className="px-4 py-4 font-medium text-slate-200">{admin.role}</td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`text-xs font-medium ${
+                          admin.twoFactor ? "text-emerald-400" : "text-amber-400"
+                        }`}
+                      >
+                        {admin.twoFactor ? "Enabled" : "Not set up"}
+                      </span>
+                    </td>
+                    <td className="py-4 pl-4 pr-6 font-mono text-slate-400">
+                      {admin.lastSignIn || "Never"}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -171,12 +174,10 @@ export function TeamRolesPage() {
 
       {/* 2. Permission Matrix Card */}
       <div className="rounded-2xl border border-white/[0.08] bg-[#0E1326] shadow-xl overflow-hidden">
-        {/* Header */}
         <div className="p-6 pb-4">
           <h3 className="text-sm font-semibold tracking-wide text-white">Permission matrix</h3>
         </div>
 
-        {/* Matrix Table */}
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-left text-xs">
             <thead className="border-b border-white/[0.06] text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -228,6 +229,88 @@ export function TeamRolesPage() {
           </table>
         </div>
       </div>
+
+      {/* Invite Admin Modal */}
+      {inviteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <form
+            onSubmit={handleInviteSubmit}
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0E1326] p-6 shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-white">Invite Administrator</h4>
+              <button
+                type="button"
+                onClick={() => setInviteOpen(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Full Name
+              </label>
+              <input
+                type="text"
+                required
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+                placeholder="Enter administrator name"
+                className="w-full rounded-xl border border-white/10 bg-[#080C1B] px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Work Email
+              </label>
+              <input
+                type="email"
+                required
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="admin@domain.com"
+                className="w-full rounded-xl border border-white/10 bg-[#080C1B] px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Role
+              </label>
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-[#080C1B] px-3.5 py-2 text-xs text-slate-100 outline-none focus:border-indigo-400"
+              >
+                <option value="Super Admin">Super Admin</option>
+                <option value="Trust & Safety">Trust & Safety</option>
+                <option value="Support Agent">Support Agent</option>
+                <option value="Product Analyst">Product Analyst</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setInviteOpen(false)}
+                className="rounded-xl border border-white/10 px-4 py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.04] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-xl bg-[#6366F1] px-4 py-2 text-xs font-semibold text-white hover:bg-[#545CEB] cursor-pointer disabled:opacity-50"
+              >
+                {submitting ? "Sending..." : "Send Invite"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
