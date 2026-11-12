@@ -4,6 +4,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { User } from './src/models/User.js';
 import authRoutes from './src/routes/authRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js';
+import journalRoutes from './src/routes/journalRoutes.js';
 
 dotenv.config();
 
@@ -20,8 +22,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Authentication Routes (Google & Apple OAuth)
+// Core API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/journal', journalRoutes);
 
 // Test Routes (Database verification)
 app.post('/api/users/test', async (req, res) => {
