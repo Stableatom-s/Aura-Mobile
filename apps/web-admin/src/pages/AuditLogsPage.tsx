@@ -11,109 +11,31 @@ export interface AuditEntry {
   detail: string;
 }
 
-const AUDIT_DATA: AuditEntry[] = [
-  {
-    id: "aud_01",
-    when: "just now",
-    adminName: "Priya Raman",
-    adminRole: "Super Admin",
-    action: "Claimed flag",
-    target: "flg_0405",
-    detail: "Assigned to self",
-  },
-  {
-    id: "aud_02",
-    when: "just now",
-    adminName: "Priya Raman",
-    adminRole: "Super Admin",
-    action: "Claimed flag",
-    target: "flg_0409",
-    detail: "Assigned to self",
-  },
-  {
-    id: "aud_03",
-    when: "just now",
-    adminName: "Priya Raman",
-    adminRole: "Super Admin",
-    action: "Claimed flag",
-    target: "flg_0412",
-    detail: "Assigned to self",
-  },
-  {
-    id: "aud_04",
-    when: "51 min ago",
-    adminName: "Dana Whitfield",
-    adminRole: "Trust & Safety",
-    action: "Claimed flag",
-    target: "flg_0411",
-    detail: "Assigned to self",
-  },
-  {
-    id: "aud_05",
-    when: "2 h ago",
-    adminName: "Jun Takeda",
-    adminRole: "Support Agent",
-    action: "Exported user data",
-    target: "usr_6k08",
-    detail: "GDPR request #5521 · JSON",
-  },
-  {
-    id: "aud_06",
-    when: "5 h ago",
-    adminName: "Priya Raman",
-    adminRole: "Super Admin",
-    action: "Changed role",
-    target: "Elise Moreau",
-    detail: "Support Agent → Product Analyst",
-  },
-  {
-    id: "aud_07",
-    when: "2 d ago",
-    adminName: "Marcus Oyelaran",
-    adminRole: "Trust & Safety",
-    action: "Revealed excerpts",
-    target: "usr_76m30",
-    detail: "Reason: abuse report review",
-  },
-  {
-    id: "aud_08",
-    when: "3 d ago",
-    adminName: "Dana Whitfield",
-    adminRole: "Trust & Safety",
-    action: "Suspended account",
-    target: "usr_6hy6",
-    detail: "Harassment of other users",
-  },
-  {
-    id: "aud_09",
-    when: "4 d ago",
-    adminName: "Priya Raman",
-    adminRole: "Super Admin",
-    action: "Scheduled deletion",
-    target: "usr_79p33",
-    detail: "User request · 30 day grace",
-  },
-];
-
 interface AuditLogsPageProps {
+  logs?: AuditEntry[];
+  isLoading?: boolean;
   onOpenUser?: (userId: string) => void;
 }
 
-export function AuditLogsPage({ onOpenUser }: AuditLogsPageProps) {
+export function AuditLogsPage({
+  logs = [],
+  isLoading = false,
+  onOpenUser,
+}: AuditLogsPageProps) {
   const [search, setSearch] = useState("");
 
   const filteredLogs = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return AUDIT_DATA;
+    if (!q) return logs;
 
-    return AUDIT_DATA.filter(
+    return logs.filter(
       (entry) =>
-        entry.adminName.toLowerCase().includes(q) ||
-        entry.action.toLowerCase().includes(q) ||
-        entry.target.toLowerCase().includes(q) ||
-        entry.detail.toLowerCase().includes(q)
+        (entry.adminName || "").toLowerCase().includes(q) ||
+        (entry.action || "").toLowerCase().includes(q) ||
+        (entry.target || "").toLowerCase().includes(q) ||
+        (entry.detail || "").toLowerCase().includes(q)
     );
-  }, [search]);
+  }, [logs, search]);
 
   return (
     <div className="space-y-4 pb-12">
@@ -150,49 +72,55 @@ export function AuditLogsPage({ onOpenUser }: AuditLogsPageProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
-              {filteredLogs.map((log) => {
-                const isUserTarget = log.target.startsWith("usr_");
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-500">
+                    Loading audit logs from database...
+                  </td>
+                </tr>
+              ) : filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-500">
+                    {search.trim()
+                      ? `No audit logs matching "${search}"`
+                      : "No administrative audit entries recorded yet."}
+                  </td>
+                </tr>
+              ) : (
+                filteredLogs.map((log) => {
+                  const isUserTarget =
+                    log.target.startsWith("usr_") || /^[a-f0-9]{24}$/i.test(log.target);
 
-                return (
-                  <tr key={log.id} className="transition hover:bg-white/[0.02]">
-                    {/* Monospace Timestamp */}
-                    <td className="py-4 pl-6 pr-4 font-mono text-slate-400 whitespace-nowrap">
-                      {log.when}
-                    </td>
-
-                    {/* Admin Name & Role */}
-                    <td className="px-4 py-4">
-                      <p className="font-semibold text-slate-100">{log.adminName}</p>
-                      <p className="text-[11px] text-slate-500">{log.adminRole}</p>
-                    </td>
-
-                    {/* Action Name */}
-                    <td className="px-4 py-4 font-semibold text-slate-100">
-                      {log.action}
-                    </td>
-
-                    {/* Target (clickable if user ID) */}
-                    <td className="px-4 py-4">
-                      {isUserTarget ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenUser?.(log.target)}
-                          className="font-mono text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer"
-                        >
-                          {log.target}
-                        </button>
-                      ) : (
-                        <span className="font-mono text-slate-200">{log.target}</span>
-                      )}
-                    </td>
-
-                    {/* Detail */}
-                    <td className="py-4 pl-4 pr-6 text-slate-400">
-                      {log.detail}
-                    </td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={log.id} className="transition hover:bg-white/[0.02]">
+                      <td className="py-4 pl-6 pr-4 font-mono text-slate-400 whitespace-nowrap">
+                        {log.when}
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="font-semibold text-slate-100">{log.adminName}</p>
+                        <p className="text-[11px] text-slate-500">{log.adminRole}</p>
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-slate-100">
+                        {log.action}
+                      </td>
+                      <td className="px-4 py-4">
+                        {isUserTarget ? (
+                          <button
+                            type="button"
+                            onClick={() => onOpenUser?.(log.target)}
+                            className="font-mono text-indigo-400 hover:text-indigo-300 hover:underline cursor-pointer"
+                          >
+                            {log.target}
+                          </button>
+                        ) : (
+                          <span className="font-mono text-slate-200">{log.target}</span>
+                        )}
+                      </td>
+                      <td className="py-4 pl-4 pr-6 text-slate-400">{log.detail}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

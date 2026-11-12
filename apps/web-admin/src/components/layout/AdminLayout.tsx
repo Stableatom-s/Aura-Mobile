@@ -14,6 +14,7 @@ interface AdminLayoutProps {
   can: (perm: Perm) => boolean;
   users: User[];
   onOpenUser: (userId: string) => void;
+  currentAdmin?: { name: string; email?: string };
   children: ReactNode;
 }
 
@@ -32,10 +33,11 @@ export function AdminLayout({
   onNavigate,
   activeRole,
   onRoleChange,
-  openFlagsCount = 4,
+  openFlagsCount = 0,
   can,
   users,
   onOpenUser,
+  currentAdmin,
   children,
 }: AdminLayoutProps) {
   const [title, subtitle] = VIEW_TITLES[currentView] ?? ["Console", "Aura Administration"];
@@ -58,6 +60,7 @@ export function AdminLayout({
           activeRole={activeRole}
           users={users}
           onOpenUser={onOpenUser}
+          currentAdmin={currentAdmin}
         />
 
         <main className="flex-1 px-6 py-6 pb-20">

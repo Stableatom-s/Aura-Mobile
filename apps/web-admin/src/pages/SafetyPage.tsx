@@ -4,16 +4,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ago, type Flag, type User } from "../data";
 
 interface SafetyPageProps {
-  flags: Flag[];
-  users: User[];
+  flags?: Flag[];
+  users?: User[];
   onOpenUser: (userId: string) => void;
   onClaimFlag?: (flagId: string) => void;
   onResolveFlag?: (flagId: string) => void;
 }
 
 export function SafetyPage({
-  flags,
-  users,
+  flags = [],
+  users = [],
   onOpenUser,
   onClaimFlag,
   onResolveFlag,
@@ -21,7 +21,6 @@ export function SafetyPage({
   const [activeTab, setActiveTab] = useState<"Active" | "Resolved">("Active");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Auto-dismiss the toast pill after 3.5 seconds
   useEffect(() => {
     if (!toastMessage) return;
     const timer = setTimeout(() => {
@@ -37,18 +36,17 @@ export function SafetyPage({
 
   const handleResolve = (flagId: string) => {
     onResolveFlag?.(flagId);
+    setToastMessage("Flag resolved · logged to audit trail");
   };
 
-  // Filter flags according to tab
   const displayedFlags = flags.filter((f) =>
     activeTab === "Active" ? f.status !== "Resolved" : f.status === "Resolved"
   );
 
   return (
     <div className="relative space-y-6 pb-20">
-      {/* Top Header Row with Active/Resolved Pills and Caption */}
+      {/* Top Header Row */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Toggle Pills */}
         <div className="flex rounded-full bg-[#0E1328] p-1 border border-white/[0.06]">
           <button
             type="button"
@@ -74,7 +72,6 @@ export function SafetyPage({
           </button>
         </div>
 
-        {/* Info Caption */}
         <p className="text-xs text-slate-400">
           Flags are generated automatically from chat, voice, journal and mood signals.
         </p>
@@ -89,20 +86,22 @@ export function SafetyPage({
         ) : (
           displayedFlags.map((flag) => {
             const user = users.find((u) => u.id === flag.userId);
-            const userName = user?.name || "Unknown User";
-            const userHue = user?.hue || 280;
-            const initials = userName
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2);
+            const userName = user?.name || user?.email || "Unknown User";
+            const userHue = typeof user?.hue === "number" ? user.hue : 280;
+            const initials =
+              userName
+                .split(" ")
+                .filter(Boolean)
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2) || "U";
 
             return (
               <div
                 key={flag.id}
                 className="group relative flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/[0.07] bg-[#0C1024]/90 p-4 px-5 shadow-lg shadow-black/20 transition hover:border-white/15 hover:bg-[#0E1328]"
               >
-                {/* Left: Avatar + User Info (Clicking opens user drawer) */}
                 <div
                   onClick={() => onOpenUser(flag.userId)}
                   className="flex items-center gap-4 cursor-pointer"
@@ -123,9 +122,7 @@ export function SafetyPage({
                   </div>
                 </div>
 
-                {/* Right: Badges, Metadata, & Action Buttons */}
                 <div className="flex flex-wrap items-center gap-4">
-                  {/* Severity Badge */}
                   <span
                     className={`rounded-full px-3 py-0.5 text-xs font-medium ring-1 ring-inset ${
                       flag.severity === "High"
@@ -136,7 +133,6 @@ export function SafetyPage({
                     {flag.severity}
                   </span>
 
-                  {/* Status Badge */}
                   <span
                     className={`rounded-full px-3 py-0.5 text-xs font-medium ring-1 ring-inset ${
                       flag.status === "Reviewing"
@@ -149,17 +145,16 @@ export function SafetyPage({
                     {flag.status}
                   </span>
 
-                  {/* Incident Metadata */}
                   <div className="text-right text-xs leading-relaxed text-slate-400 min-w-[150px]">
                     <p className="font-mono text-[11px] text-slate-300">
                       {flag.id} · {flag.source}
                     </p>
                     <p className="text-[11px] text-slate-500">
-                      {ago(flag.min)} · {flag.assignee ? flag.assignee : "Unassigned"}
+                      {typeof flag.min === "number" ? ago(flag.min) : "—"} ·{" "}
+                      {flag.assignee ? flag.assignee : "Unassigned"}
                     </p>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="flex items-center gap-2">
                     {flag.status !== "Resolved" && (
                       <>
@@ -190,7 +185,6 @@ export function SafetyPage({
         )}
       </div>
 
-      {/* Bottom Floating Pill Notification Toast */}
       <AnimatePresence>
         {toastMessage && (
           <motion.div
