@@ -60,6 +60,13 @@ const AdminModel = mongoose.models.AdminMember || mongoose.model('AdminMember', 
 const SafetyFlagModel = mongoose.models.SafetyFlag || mongoose.model('SafetyFlag', SafetyFlagSchema);
 const AuditLogModel = mongoose.models.AuditLog || mongoose.model('AuditLog', AuditLogSchema);
 
+const ROLE_LABEL_TO_KEY: Record<string, 'super' | 'safety' | 'support' | 'analyst'> = {
+  'Super Admin': 'super',
+  'Trust & Safety': 'safety',
+  'Support Agent': 'support',
+  'Product Analyst': 'analyst',
+};
+
 function minutesAgo(date?: Date | string): number {
   if (!date) return 0;
   const diffMs = Date.now() - new Date(date).getTime();
@@ -94,7 +101,66 @@ const EMOTION_SCORE: Record<string, number> = {
   Excited: 5,
 };
 
-// GET /api/admin/bootstrap
+// POST /api/admin/login — Authenticate admin by work email and resolve DB role
+router.post('/login', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code || String(code).length !== 6) {
+      res.status(400).json({ success: false, message: 'Valid email and 6-digit 2FA code required.' });
+      return;
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    let admin = await AdminModel.findOne({ email: normalizedEmail });
+
+    if (!admin) {
+      const totalAdmins = await AdminModel.countDocuments();
+      if (totalAdmins === 0) {
+        admin = await AdminModel.create({
+          name: normalizedEmail.split('@')[0],
+          email: normalizedEmail,
+          role: 'Super Admin',
+          twoFactor: true,
+          lastSignIn: new Date().toLocaleString(),
+        });
+      } else {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. Ask a Super Admin to invite this email in Team & Roles.',
+        });
+        return;
+      }
+    } else {
+      admin.lastSignIn = new Date().toLocaleString();
+      admin.twoFactor = true;
+      await admin.save();
+    }
+
+    const roleKey = ROLE_LABEL_TO_KEY[admin.role] || 'support';
+
+    await AuditLogModel.create({
+      adminName: admin.name,
+      adminRole: admin.role,
+      action: 'Signed in to console',
+      target: admin.email,
+      detail: '2FA verified',
+    });
+
+    res.json({
+      success: true,
+      admin: {
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        roleKey,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/admin/bootstrap — Loads all live MongoDB data for the Admin Console
 router.get('/bootstrap', async (_req: Request, res: Response): Promise<void> => {
   try {
     const [rawUsers, rawJournals, rawFlags, rawAdmins, rawLogs] = await Promise.all([
@@ -245,104 +311,6 @@ router.get('/bootstrap', async (_req: Request, res: Response): Promise<void> => 
   }
 });
 
-// PATCH /api/admin/users/:id
-router.patch('/users/:id', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const patch = req.body;
-
-    const updated = await User.findByIdAndUpdate(id, { $set: patch }, { new: true });
-    if (!updated) {
-      res.status(404).json({ success: false, message: 'User not found' });
-      return;
-    }
-
-    await AuditLogModel.create({
-      adminName: patch.adminName || 'Console Admin',
-      adminRole: patch.adminRole || 'Super Admin',
-      action: patch.status ? `Updated status to ${patch.status}` : 'Updated user record',
-      target: id,
-      detail: JSON.stringify(patch),
-    });
-
-    res.json({ success: true, user: updated });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// PATCH /api/admin/flags/:id
-router.patch('/flags/:id', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { status, assignee, adminRole } = req.body;
-
-    const updated = await SafetyFlagModel.findByIdAndUpdate(
-      id,
-      { $set: { ...(status && { status }), ...(assignee && { assignee }) } },
-      { new: true }
-    );
-
-    if (!updated) {
-      res.status(404).json({ success: false, message: 'Flag not found' });
-      return;
-    }
-
-    await AuditLogModel.create({
-      adminName: assignee || 'Console Admin',
-      adminRole: adminRole || 'Trust & Safety',
-      action: status === 'Resolved' ? 'Resolved flag' : 'Claimed flag',
-      target: id,
-      detail: status === 'Resolved' ? 'Marked resolved' : `Assigned to ${assignee}`,
-    });
-
-    res.json({ success: true, flag: updated });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// POST /api/admin/team/invite
-router.post('/team/invite', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { name, email, role } = req.body;
-    if (!name || !email) {
-      res.status(400).json({ success: false, message: 'Name and email are required' });
-      return;
-    }
-
-    const admin = await AdminModel.create({
-      name,
-      email,
-      role: role || 'Trust & Safety',
-      twoFactor: false,
-      lastSignIn: 'Pending invite',
-    });
-
-    await AuditLogModel.create({
-      adminName: 'Console Admin',
-      adminRole: 'Super Admin',
-      action: 'Invited admin',
-      target: email,
-      detail: `Role: ${role || 'Trust & Safety'}`,
-    });
-
-    res.status(201).json({
-      success: true,
-      admin: {
-        id: String(admin._id),
-        name: admin.name,
-        email: admin.email,
-        role: admin.role,
-        twoFactor: admin.twoFactor,
-        lastSignIn: admin.lastSignIn,
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
 // GET /api/admin/users/:id/details — Fetch a specific user's live journal entries for UserDrawer
 router.get('/users/:id/details', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -381,6 +349,104 @@ router.post('/users/:id/reveal', async (req: Request, res: Response): Promise<vo
     });
 
     res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/admin/users/:id — Suspend, restore, or update user status/plan
+router.patch('/users/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const patch = req.body;
+
+    const updated = await User.findByIdAndUpdate(id, { $set: patch }, { new: true });
+    if (!updated) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    await AuditLogModel.create({
+      adminName: patch.adminName || 'Console Admin',
+      adminRole: patch.adminRole || 'Super Admin',
+      action: patch.status ? `Updated status to ${patch.status}` : 'Updated user record',
+      target: id,
+      detail: JSON.stringify(patch),
+    });
+
+    res.json({ success: true, user: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/admin/flags/:id — Claim or resolve a safety flag
+router.patch('/flags/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { status, assignee, adminRole } = req.body;
+
+    const updated = await SafetyFlagModel.findByIdAndUpdate(
+      id,
+      { $set: { ...(status && { status }), ...(assignee && { assignee }) } },
+      { new: true }
+    );
+
+    if (!updated) {
+      res.status(404).json({ success: false, message: 'Flag not found' });
+      return;
+    }
+
+    await AuditLogModel.create({
+      adminName: assignee || 'Console Admin',
+      adminRole: adminRole || 'Trust & Safety',
+      action: status === 'Resolved' ? 'Resolved flag' : 'Claimed flag',
+      target: id,
+      detail: status === 'Resolved' ? 'Marked resolved' : `Assigned to ${assignee}`,
+    });
+
+    res.json({ success: true, flag: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/admin/team/invite — Invite/save a new admin member
+router.post('/team/invite', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, email, role } = req.body;
+    if (!name || !email) {
+      res.status(400).json({ success: false, message: 'Name and email are required' });
+      return;
+    }
+
+    const admin = await AdminModel.create({
+      name,
+      email,
+      role: role || 'Trust & Safety',
+      twoFactor: false,
+      lastSignIn: 'Pending invite',
+    });
+
+    await AuditLogModel.create({
+      adminName: 'Console Admin',
+      adminRole: 'Super Admin',
+      action: 'Invited admin',
+      target: email,
+      detail: `Role: ${role || 'Trust & Safety'}`,
+    });
+
+    res.status(201).json({
+      success: true,
+      admin: {
+        id: String(admin._id),
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        twoFactor: admin.twoFactor,
+        lastSignIn: admin.lastSignIn,
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

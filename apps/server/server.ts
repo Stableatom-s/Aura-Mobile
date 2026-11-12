@@ -4,6 +4,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { User } from './src/models/User.js';
 import authRoutes from './src/routes/authRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
+import chatRoutes from './src/routes/chatRoutes.js';
+import journalRoutes from './src/routes/journalRoutes.js';
 
 dotenv.config();
 
