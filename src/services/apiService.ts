@@ -7,9 +7,9 @@ const DEV_LAN_IP = '192.168.1.100';
 const USE_PHYSICAL_DEVICE = false; // set to true if testing on a real phone via Expo Go
 
 const BASE_URL = Platform.select({
-  android: USE_PHYSICAL_DEVICE ? `http://${DEV_LAN_IP}:5000/api` : 'http://10.0.2.2:5000/api',
-  ios: 'http://localhost:5000/api',
-  default: 'http://localhost:5000/api',
+  android: USE_PHYSICAL_DEVICE ? `http://${DEV_LAN_IP}:5001/api` : 'http://10.0.2.2:5001/api',
+  ios: 'http://localhost:5001/api',
+  default: 'http://localhost:5001/api',
 });
 
 const TOKEN_KEY = '@aura_session_token';
