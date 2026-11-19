@@ -67,6 +67,10 @@ const ROLE_LABEL_TO_KEY: Record<string, 'super' | 'safety' | 'support' | 'analys
   'Product Analyst': 'analyst',
 };
 
+function getSingleParam(param: string | string[] | undefined): string {
+  return Array.isArray(param) ? param[0] || '' : param || '';
+}
+
 function minutesAgo(date?: Date | string): number {
   if (!date) return 0;
   const diffMs = Date.now() - new Date(date).getTime();
@@ -314,7 +318,12 @@ router.get('/bootstrap', async (_req: Request, res: Response): Promise<void> => 
 // GET /api/admin/users/:id/details — Fetch a specific user's live journal entries for UserDrawer
 router.get('/users/:id/details', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid user ID' });
+      return;
+    }
+
     const journals = await JournalEntry.find({ userId: id })
       .sort({ createdAt: -1 })
       .limit(50)
@@ -337,7 +346,12 @@ router.get('/users/:id/details', async (req: Request, res: Response): Promise<vo
 // POST /api/admin/users/:id/reveal — Record excerpt reveal in AuditLog
 router.post('/users/:id/reveal', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
+    if (!id) {
+      res.status(400).json({ success: false, message: 'User ID is required' });
+      return;
+    }
+
     const { reason } = req.body;
 
     await AuditLogModel.create({
@@ -357,21 +371,30 @@ router.post('/users/:id/reveal', async (req: Request, res: Response): Promise<vo
 // PATCH /api/admin/users/:id — Suspend, restore, or update user status/plan
 router.patch('/users/:id', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const patch = req.body;
+    const id = getSingleParam(req.params.id);
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid user ID' });
+      return;
+    }
 
-    const updated = await User.findByIdAndUpdate(id, { $set: patch }, { new: true });
+    const { status, risk, subscription, adminName, adminRole } = req.body;
+    const allowedUpdates: Record<string, any> = {};
+    if (status !== undefined) allowedUpdates.status = status;
+    if (risk !== undefined) allowedUpdates.risk = risk;
+    if (subscription !== undefined) allowedUpdates.subscription = subscription;
+
+    const updated = await User.findByIdAndUpdate(id, { $set: allowedUpdates }, { new: true });
     if (!updated) {
       res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
 
     await AuditLogModel.create({
-      adminName: patch.adminName || 'Console Admin',
-      adminRole: patch.adminRole || 'Super Admin',
-      action: patch.status ? `Updated status to ${patch.status}` : 'Updated user record',
+      adminName: adminName || 'Console Admin',
+      adminRole: adminRole || 'Super Admin',
+      action: status ? `Updated status to ${status}` : 'Updated user record',
       target: id,
-      detail: JSON.stringify(patch),
+      detail: JSON.stringify(allowedUpdates),
     });
 
     res.json({ success: true, user: updated });
@@ -383,7 +406,12 @@ router.patch('/users/:id', async (req: Request, res: Response): Promise<void> =>
 // PATCH /api/admin/flags/:id — Claim or resolve a safety flag
 router.patch('/flags/:id', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = getSingleParam(req.params.id);
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid flag ID' });
+      return;
+    }
+
     const { status, assignee, adminRole } = req.body;
 
     const updated = await SafetyFlagModel.findByIdAndUpdate(

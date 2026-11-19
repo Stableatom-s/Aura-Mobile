@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import mongoose from 'mongoose';
 import { JournalEntry } from '../models/JournalEntry.js';
 import { requireAuth, AuthRequest } from '../middleware/auth.js';
 
@@ -44,8 +45,15 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response): Promise<v
 // DELETE /api/journal/:id - Delete an entry
 router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid journal entry ID' });
+      return;
+    }
+
     const deleted = await JournalEntry.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       userId: req.userId,
     });
 

@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { User } from '../models/User.js';
+import mongoose from 'mongoose';
+import { User, IUser } from '../models/User.js';
+import { requireAuth, AuthRequest } from '../middleware/auth.js';
 import {
   verifyGoogleToken,
   verifyAppleToken,
@@ -7,6 +9,21 @@ import {
 } from '../services/authService.js';
 
 const router = Router();
+
+function formatUserResponse(user: IUser) {
+  return {
+    id: String(user._id),
+    email: user.email,
+    fullName: user.fullName,
+    gender: user.gender,
+    dateOfBirth: user.dateOfBirth,
+    avatarUrl: user.avatarUrl,
+    onboardingCompleted: user.onboardingCompleted,
+    preferences: user.preferences,
+    subscription: user.subscription,
+    streak: user.streak,
+  };
+}
 
 // POST /api/auth/google
 router.post('/google', async (req: Request, res: Response): Promise<void> => {
@@ -20,7 +37,7 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
     const verified = await verifyGoogleToken(idToken);
 
     let user = await User.findOne({
-      $or: [{ googleId: verified.oauthId }, { email: verified.email }],
+      $or: [{ googleId: verified.oauthId }, { email: verified.email.toLowerCase() }],
     });
 
     if (!user) {
@@ -44,15 +61,7 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
     res.json({
       success: true,
       token,
-      user: {
-        id: String(user._id),
-        email: user.email,
-        fullName: user.fullName,
-        gender: user.gender,
-        dateOfBirth: user.dateOfBirth,
-        avatarUrl: user.avatarUrl,
-        onboardingCompleted: user.onboardingCompleted,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error: any) {
     console.error('Google Auth Error:', error);
@@ -75,7 +84,7 @@ router.post('/apple', async (req: Request, res: Response): Promise<void> => {
     const verified = await verifyAppleToken(identityToken, userMetadata);
 
     let user = await User.findOne({
-      $or: [{ appleId: verified.oauthId }, { email: verified.email }],
+      $or: [{ appleId: verified.oauthId }, { email: verified.email.toLowerCase() }],
     });
 
     if (!user) {
@@ -95,15 +104,7 @@ router.post('/apple', async (req: Request, res: Response): Promise<void> => {
     res.json({
       success: true,
       token,
-      user: {
-        id: String(user._id),
-        email: user.email,
-        fullName: user.fullName,
-        gender: user.gender,
-        dateOfBirth: user.dateOfBirth,
-        avatarUrl: user.avatarUrl,
-        onboardingCompleted: user.onboardingCompleted,
-      },
+      user: formatUserResponse(user),
     });
   } catch (error: any) {
     console.error('Apple Auth Error:', error);
@@ -115,10 +116,21 @@ router.post('/apple', async (req: Request, res: Response): Promise<void> => {
 });
 
 // PATCH /api/auth/profile/:id — Save sequential onboarding data (Name, DOB, Gender)
-router.patch('/profile/:id', async (req: Request, res: Response): Promise<void> => {
+router.patch('/profile/:id', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-    const { fullName, gender, dateOfBirth } = req.body;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ success: false, message: 'Invalid user ID' });
+      return;
+    }
+
+    if (req.userId !== id) {
+      res.status(403).json({ success: false, message: 'Forbidden: cannot update another user profile' });
+      return;
+    }
+
+    const { fullName, gender, dateOfBirth, preferences } = req.body;
 
     const updates: Record<string, any> = {};
     if (fullName !== undefined) updates.fullName = fullName;
@@ -127,6 +139,7 @@ router.patch('/profile/:id', async (req: Request, res: Response): Promise<void> 
       updates.onboardingCompleted = true;
     }
     if (dateOfBirth !== undefined) updates.dateOfBirth = dateOfBirth;
+    if (preferences !== undefined) updates.preferences = preferences;
 
     const updatedUser = await User.findByIdAndUpdate(
       id,
@@ -141,14 +154,7 @@ router.patch('/profile/:id', async (req: Request, res: Response): Promise<void> 
 
     res.json({
       success: true,
-      user: {
-        id: String(updatedUser._id),
-        email: updatedUser.email,
-        fullName: updatedUser.fullName,
-        gender: updatedUser.gender,
-        dateOfBirth: updatedUser.dateOfBirth,
-        onboardingCompleted: updatedUser.onboardingCompleted,
-      },
+      user: formatUserResponse(updatedUser),
     });
   } catch (error: any) {
     console.error('Profile Update Error:', error);

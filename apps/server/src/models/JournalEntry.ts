@@ -1,8 +1,8 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import mongoose, { Schema, model, Document, Types } from 'mongoose';
 
 export interface IJournalEntry extends Document {
   userId: Types.ObjectId;
-  emotion: string; // e.g. 'Happy', 'Sad', 'Calm'
+  emotion: string;
   reflectionText: string;
   sentimentScore?: number;
   tags?: string[];
@@ -21,4 +21,5 @@ const JournalEntrySchema = new Schema<IJournalEntry>(
   { timestamps: true }
 );
 
-export const JournalEntry = model<IJournalEntry>('JournalEntry', JournalEntrySchema);
+export const JournalEntry =
+  mongoose.models.JournalEntry || model<IJournalEntry>('JournalEntry', JournalEntrySchema);

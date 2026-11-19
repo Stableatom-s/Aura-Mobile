@@ -29,13 +29,17 @@ router.post('/stream', requireAuth, async (req: AuthRequest, res: Response): Pro
     return;
   }
 
-  // Setup Server-Sent Events headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  const candidateModels = ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-2.5-flash-lite'];
+  let clientClosed = false;
+  req.on('close', () => {
+    clientClosed = true;
+  });
+
+  const candidateModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
   try {
     const ai = getGeminiClient();
@@ -72,6 +76,7 @@ router.post('/stream', requireAuth, async (req: AuthRequest, res: Response): Pro
         });
 
         for await (const chunk of responseStream) {
+          if (clientClosed) break;
           const chunkText = chunk.text;
           if (chunkText) {
             res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
@@ -79,15 +84,19 @@ router.post('/stream', requireAuth, async (req: AuthRequest, res: Response): Pro
         }
 
         streamSuccess = true;
-        break; // Exit fallback loop once streaming completes
+        break;
       } catch (err: any) {
         lastError = err;
-        const isTransient = err?.status === 503 || err?.status === 429 || String(err?.message).includes('503');
-        if (isTransient) {
-          console.warn(`Model ${modelName} busy (503/429), trying fallback model...`);
+        const status = err?.status;
+        const msg = String(err?.message || '');
+        const canFallback =
+          status === 503 || status === 429 || status === 404 || msg.includes('503') || msg.includes('404');
+
+        if (canFallback) {
+          console.warn(`Model ${modelName} unavailable (${status || 'error'}), trying fallback...`);
           continue;
         }
-        throw err; // Non-transient errors (like invalid API key) fail immediately
+        throw err;
       }
     }
 
@@ -95,8 +104,10 @@ router.post('/stream', requireAuth, async (req: AuthRequest, res: Response): Pro
       throw lastError || new Error('All AI models are temporarily busy.');
     }
 
-    res.write('data: [DONE]\n\n');
-    res.end();
+    if (!clientClosed) {
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
   } catch (error: any) {
     console.error('Gemini Stream Error:', error);
     const friendlyMessage =
@@ -104,8 +115,10 @@ router.post('/stream', requireAuth, async (req: AuthRequest, res: Response): Pro
         ? 'Aura is experiencing high demand right now. Please try sending your message again in a few seconds.'
         : 'Unable to reach Aura right now. Please try again.';
 
-    res.write(`data: ${JSON.stringify({ error: friendlyMessage })}\n\n`);
-    res.end();
+    if (!clientClosed) {
+      res.write(`data: ${JSON.stringify({ error: friendlyMessage })}\n\n`);
+      res.end();
+    }
   }
 });
 
