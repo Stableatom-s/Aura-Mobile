@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Check, Star } from 'lucide-react-native';
 import { BackHeader } from '@/components/common/BackHeader';
 import { GradientButton } from '@/components/ui/GradientButton';
@@ -8,6 +8,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 interface SubscriptionViewProps {
   onBack: () => void;
   isPremium: boolean;
+  onSelectPlan?: (tier: 'monthly' | 'yearly') => void;
 }
 
 const PERKS = [
@@ -18,8 +19,20 @@ const PERKS = [
   'High-bitrate soothing meditation sessions',
 ];
 
-export function SubscriptionView({ onBack, isPremium }: SubscriptionViewProps) {
+export function SubscriptionView({ onBack, isPremium, onSelectPlan }: SubscriptionViewProps) {
   const { colors, fonts, accentColor } = useAppTheme();
+  const [selectedTier, setSelectedTier] = useState<'monthly' | 'yearly'>('yearly');
+
+  const handleCheckout = () => {
+    if (onSelectPlan) {
+      onSelectPlan(selectedTier);
+      return;
+    }
+    Alert.alert(
+      'Aura Plus Checkout',
+      `Selected ${selectedTier === 'yearly' ? 'Yearly (₹2,499/yr)' : 'Monthly (₹299/mo)'} plan. Payment gateway integration is next!`
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -34,15 +47,63 @@ export function SubscriptionView({ onBack, isPremium }: SubscriptionViewProps) {
             Aura Plus
           </Text>
           <Text style={[styles.priceTag, { color: accentColor }]}>
-            ₹299{' '}
+            {selectedTier === 'yearly' ? '₹2,499' : '₹299'}{' '}
             <Text style={[styles.period, { fontSize: fonts.body, color: colors.textMuted }]}>
-              / month
+              {selectedTier === 'yearly' ? '/ year' : '/ month'}
             </Text>
           </Text>
           <Text style={[styles.subtext, { fontSize: fonts.caption, color: colors.textSecondary }]}>
             Cancel or adjust your membership anytime.
           </Text>
         </View>
+
+        {/* Billing Cycle Selector */}
+        {!isPremium && (
+          <View style={styles.tierRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setSelectedTier('monthly')}
+              style={[
+                styles.tierCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: selectedTier === 'monthly' ? accentColor : colors.border,
+                  borderWidth: selectedTier === 'monthly' ? 1.5 : 1,
+                },
+              ]}
+            >
+              <Text style={[styles.tierTitle, { color: colors.textPrimary, fontSize: fonts.body }]}>
+                Monthly
+              </Text>
+              <Text style={[styles.tierPrice, { color: accentColor, fontSize: fonts.subheading }]}>
+                ₹299/mo
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setSelectedTier('yearly')}
+              style={[
+                styles.tierCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: selectedTier === 'yearly' ? accentColor : colors.border,
+                  borderWidth: selectedTier === 'yearly' ? 1.5 : 1,
+                },
+              ]}
+            >
+              <View style={[styles.saveBadge, { backgroundColor: `${accentColor}22` }]}>
+                <Text style={[styles.saveBadgeText, { color: accentColor }]}>SAVE 30%</Text>
+              </View>
+              <Text style={[styles.tierTitle, { color: colors.textPrimary, fontSize: fonts.body }]}>
+                Yearly
+              </Text>
+              <Text style={[styles.tierPrice, { color: accentColor, fontSize: fonts.subheading }]}>
+                ₹2,499/yr
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={[styles.perksCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.perksHeader, { fontSize: fonts.caption, color: colors.textMuted }]}>
@@ -60,20 +121,9 @@ export function SubscriptionView({ onBack, isPremium }: SubscriptionViewProps) {
           ))}
         </View>
 
-        <View
-          style={[
-            styles.infoBanner,
-            { backgroundColor: `${accentColor}12`, borderColor: `${accentColor}33` },
-          ]}
-        >
-          <Text style={[styles.infoText, { fontSize: fonts.caption, color: colors.textSecondary }]}>
-            Subscriptions are managed centrally via your secure Aura account on web.
-          </Text>
-        </View>
-
         <GradientButton
-          title={isPremium ? 'Manage Membership' : 'Upgrade on Aura Web'}
-          onPress={() => {}}
+          title={isPremium ? 'Active Aura Plus Member' : 'Continue to Upgrade'}
+          onPress={handleCheckout}
         />
       </ScrollView>
     </View>
@@ -96,11 +146,28 @@ const styles = StyleSheet.create({
   priceTag: { fontSize: 32, fontWeight: '900', marginTop: 4 },
   period: { fontWeight: '500' },
   subtext: { marginTop: 4 },
+  tierRow: { flexDirection: 'row', gap: 12, marginBottom: 18 },
+  tierCard: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
+  saveBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  tierTitle: { fontWeight: '700', marginBottom: 4 },
+  tierPrice: { fontWeight: '800' },
   perksCard: {
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   perksHeader: { fontWeight: '700', letterSpacing: 1.5, marginBottom: 16 },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
@@ -112,11 +179,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   perkText: { flex: 1, lineHeight: 18 },
-  infoBanner: {
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 24,
-    borderWidth: 1,
-  },
-  infoText: { textAlign: 'center', lineHeight: 18 },
 });

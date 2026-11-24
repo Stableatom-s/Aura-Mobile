@@ -180,20 +180,17 @@ function AnimatedAuraLogo({ accentColor }: { accentColor: string }) {
   );
 }
 
-export function AuthView({ onSuccess, onGuestContinue }: AuthViewProps) {
+export function AuthView({ onSuccess }: AuthViewProps) {
   const { colors, fonts, accentColor } = useAppTheme();
   const [loadingProvider, setLoadingProvider] = useState<'google' | 'apple' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const redirectUri = makeRedirectUri({
-    scheme: 'aura',
-  });
-
+  // Let expo-auth-session automatically use com.googleusercontent.apps.<ID>:/oauthredirect on Android/iOS
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID,
+    webClientId: GOOGLE_WEB_CLIENT_ID,
     androidClientId: GOOGLE_ANDROID_CLIENT_ID,
     iosClientId: GOOGLE_IOS_CLIENT_ID,
-    redirectUri,
+    ...(Platform.OS === 'web' ? { redirectUri: makeRedirectUri() } : {}),
   });
 
   useEffect(() => {
@@ -223,7 +220,7 @@ export function AuthView({ onSuccess, onGuestContinue }: AuthViewProps) {
       setLoadingProvider('google');
       setErrorMessage(null);
       const result = await apiService.authenticateWithGoogle(idToken);
-      onSuccess(result.user, result.isNewUser);
+      onSuccess(result.user, Boolean(result.isNewUser));
     } catch (err: any) {
       setErrorMessage(err.message || 'Server authentication failed. Verify server connection.');
     } finally {
@@ -231,14 +228,19 @@ export function AuthView({ onSuccess, onGuestContinue }: AuthViewProps) {
     }
   };
 
-  const handleGooglePress = () => {
+  const handleGooglePress = async () => {
     setErrorMessage(null);
     if (!request) {
       setErrorMessage('Google Auth is initializing. Please tap again in a moment.');
       return;
     }
-    setLoadingProvider('google');
-    promptAsync();
+    try {
+      setLoadingProvider('google');
+      await promptAsync();
+    } catch (err: any) {
+      setLoadingProvider(null);
+      setErrorMessage(err.message || 'Unable to launch Google Sign-In.');
+    }
   };
 
   const handleApplePress = async () => {
@@ -263,7 +265,7 @@ export function AuthView({ onSuccess, onGuestContinue }: AuthViewProps) {
             lastName: credential.fullName?.familyName || undefined,
           },
         });
-        onSuccess(result.user, result.isNewUser);
+        onSuccess(result.user, Boolean(result.isNewUser));
       } else {
         setErrorMessage('Apple sign-in is not supported on Android devices.');
       }

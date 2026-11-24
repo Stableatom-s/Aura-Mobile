@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { StyleSheet, View, SafeAreaView } from "react-native";
 import { Colors } from "@/constants/colors";
 import { ScreenState, JournalRecord, UserProfileData } from "@/types";
-import { StorageService } from "@/services/storage";
+import { StorageService, DEFAULT_PROFILE } from "@/services/storage";
 import { apiService } from "@/services/apiService";
 import { BottomNavDock } from "@/components/common/BottomNavDock";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -41,19 +41,17 @@ function MainNavigator() {
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>("Happy");
   const [showVoiceModal, setShowVoiceModal] = useState<boolean>(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<UserProfileData>({
-    name: "User",
-    email: "",
-    gender: "",
-    streak: 1,
-    sessions: 0,
-    memories: 0,
-    isPremium: false,
-  });
+  const [profile, setProfile] = useState<UserProfileData>(DEFAULT_PROFILE);
   const [journals, setJournals] = useState<JournalRecord[]>([]);
 
   const loadData = async () => {
     try {
+      const storedProfile = await StorageService.getProfile();
+      if (storedProfile?.id) {
+        setUserId(storedProfile.id);
+        setProfile(storedProfile);
+      }
+
       const storedJournals = await StorageService.getJournals();
       if (storedJournals) {
         setJournals(storedJournals);
@@ -67,33 +65,44 @@ function MainNavigator() {
     loadData();
   }, []);
 
-  // 1. Google/Apple Auth Done -> strictly go to name-setup
+  // 1. Google/Apple Auth Done -> route to home if onboarding already completed, otherwise name-setup
   const handleAuthSuccess = (userData: any, _isNewUser: boolean) => {
     const dbId = userData?.id || userData?._id;
     if (dbId) setUserId(dbId);
 
+    const isComplete = Boolean(
+      userData?.onboardingCompleted && userData?.fullName && userData?.gender
+    );
+
     const updated: UserProfileData = {
       ...profile,
+      id: dbId || profile.id,
       email: userData?.email || profile.email,
       name: userData?.fullName || profile.name,
+      gender: userData?.gender || profile.gender,
+      avatarUrl: userData?.avatarUrl || profile.avatarUrl,
+      dateOfBirth: userData?.dateOfBirth || profile.dateOfBirth,
+      onboardingCompleted: isComplete,
+      preferences: userData?.preferences || profile.preferences,
+      streak: userData?.streak ?? profile.streak,
       isPremium: userData?.subscription?.isPro ?? profile.isPremium,
     };
     setProfile(updated);
     StorageService.saveProfile(updated);
 
-    // Explicitly transition to name-setup
-    setPhase("name-setup");
+    setPhase(isComplete ? "home" : "name-setup");
   };
 
   // 2. Name & Birthdate Setup Done -> strictly go to gender-select
   const handleNameComplete = async (name: string, dateOfBirth?: DateOfBirthPayload) => {
-    const updated = { ...profile, name };
+    const updated: UserProfileData = { ...profile, name, dateOfBirth };
     setProfile(updated);
     StorageService.saveProfile(updated);
 
-    if (userId) {
+    const activeUserId = userId || profile.id;
+    if (activeUserId) {
       try {
-        await apiService.updateProfile(userId, { fullName: name, dateOfBirth });
+        await apiService.updateProfile(activeUserId, { fullName: name, dateOfBirth });
       } catch (err) {
         console.warn("Backend name/birthdate sync error:", err);
       }
@@ -102,15 +111,20 @@ function MainNavigator() {
     setPhase("gender-select");
   };
 
-  // 3. Gender Setup Done -> only now land on home
+  // 3. Gender Setup Done -> mark onboardingCompleted & land on home
   const handleGenderComplete = async (gender: string) => {
-    const updated = { ...profile, gender };
+    const updated: UserProfileData = {
+      ...profile,
+      gender,
+      onboardingCompleted: true,
+    };
     setProfile(updated);
     StorageService.saveProfile(updated);
 
-    if (userId) {
+    const activeUserId = userId || profile.id;
+    if (activeUserId) {
       try {
-        await apiService.updateProfile(userId, { gender });
+        await apiService.updateProfile(activeUserId, { gender });
       } catch (err) {
         console.warn("Backend gender sync error:", err);
       }
@@ -134,7 +148,11 @@ function MainNavigator() {
         <ScreenTransition screenKey={phase}>
           {/* Onboarding Sequence */}
           {phase === "splash" && (
-            <SplashView onNext={() => setPhase("onboarding")} />
+            <SplashView
+              onNext={() =>
+                setPhase(profile.onboardingCompleted && profile.id ? "home" : "onboarding")
+              }
+            />
           )}
           {phase === "onboarding" && (
             <OnboardingView onComplete={() => setPhase("auth")} />
@@ -147,7 +165,7 @@ function MainNavigator() {
           )}
           {phase === "name-setup" && (
             <NameSetupView
-              initialName={profile.name}
+              initialName={profile.name === "User" ? "" : profile.name}
               onBack={() => setPhase("auth")}
               onNext={handleNameComplete}
             />
@@ -167,8 +185,8 @@ function MainNavigator() {
               onSelectEmotion={setSelectedEmotion}
               streak={profile.streak}
               onNavigate={(screen) => {
-                if (screen === 'notifications') {
-                  setPhase('notification-inbox' as ScreenState);
+                if (screen === "notifications") {
+                  setPhase("notification-inbox" as ScreenState);
                 } else {
                   setPhase(screen as ScreenState);
                 }

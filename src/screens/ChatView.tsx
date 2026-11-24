@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   SafeAreaView,
 } from 'react-native';
@@ -37,7 +38,17 @@ export function ChatView({ userMood }: ChatViewProps) {
   ]);
   const [inputText, setInputText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleSend = async () => {
     const trimmed = inputText.trim();
@@ -56,10 +67,13 @@ export function ChatView({ userMood }: ChatViewProps) {
       text: '',
     };
 
-    const historySnapshot = messages.slice(-10).map((m) => ({
-      sender: m.sender,
-      text: m.text,
-    }));
+    const historySnapshot = messages
+      .filter((m) => m.text.trim().length > 0)
+      .slice(-10)
+      .map((m) => ({
+        sender: m.sender,
+        text: m.text,
+      }));
 
     setMessages((prev) => [...prev, userMsg, aiPlaceholder]);
     setInputText('');
@@ -115,8 +129,8 @@ export function ChatView({ userMood }: ChatViewProps) {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={90}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -151,7 +165,16 @@ export function ChatView({ userMood }: ChatViewProps) {
           }}
         />
 
-        <View style={[styles.inputBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+        <View
+          style={[
+            styles.inputBar,
+            {
+              backgroundColor: colors.surface,
+              borderTopColor: colors.border,
+              paddingBottom: keyboardVisible ? 12 : 95,
+            },
+          ]}
+        >
           <TextInput
             value={inputText}
             onChangeText={setInputText}
@@ -202,8 +225,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    paddingBottom: 95, // Clears floating BottomNavDock
+    paddingTop: 10,
     borderTopWidth: 1,
     gap: 10,
   },

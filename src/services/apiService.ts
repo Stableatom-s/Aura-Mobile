@@ -1,18 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// For physical phone testing: run `ipconfig` in cmd to get your IPv4 address (e.g. 192.168.1.X)
-// For Android emulator: 10.0.2.2 works automatically
+// Set EXPO_PUBLIC_API_URL in root .env (e.g. http://192.168.1.15:5001/api) for physical devices
 const DEV_LAN_IP = '192.168.1.100';
-const USE_PHYSICAL_DEVICE = false; // set to true if testing on a real phone via Expo Go
+const USE_PHYSICAL_DEVICE = true;
 
-const BASE_URL = Platform.select({
+const FALLBACK_BASE_URL = Platform.select({
   android: USE_PHYSICAL_DEVICE ? `http://${DEV_LAN_IP}:5001/api` : 'http://10.0.2.2:5001/api',
   ios: 'http://localhost:5001/api',
   default: 'http://localhost:5001/api',
 });
 
+export const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || FALLBACK_BASE_URL!).replace(/\/$/, '');
+
 const TOKEN_KEY = '@aura_session_token';
+
+async function parseJsonSafe(res: Response): Promise<any> {
+  const text = await res.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`Server returned non-JSON response (${res.status}): ${text.slice(0, 120)}`);
+  }
+}
 
 export const apiService = {
   async setToken(token: string): Promise<void> {
@@ -35,7 +45,7 @@ export const apiService = {
       body: JSON.stringify({ idToken }),
     });
 
-    const data = await res.json();
+    const data = await parseJsonSafe(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Failed to authenticate with Google');
     }
@@ -57,7 +67,7 @@ export const apiService = {
       body: JSON.stringify({ identityToken, user: userMetadata }),
     });
 
-    const data = await res.json();
+    const data = await parseJsonSafe(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Failed to authenticate with Apple');
     }
@@ -75,15 +85,27 @@ export const apiService = {
       fullName?: string;
       gender?: string;
       dateOfBirth?: { month: string; day: number; year: number };
+      preferences?: {
+        theme?: 'dark' | 'light' | 'auto';
+        accentColor?: string;
+        fontSize?: 'small' | 'medium' | 'large';
+        language?: 'en' | 'hi';
+        dailyReminders?: boolean;
+        hapticFeedback?: boolean;
+      };
     }
   ) {
+    const token = await this.getToken();
     const res = await fetch(`${BASE_URL}/auth/profile/${userId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(data),
     });
 
-    const resData = await res.json();
+    const resData = await parseJsonSafe(res);
     if (!res.ok || !resData.success) {
       throw new Error(resData.message || 'Failed to update profile');
     }
@@ -95,11 +117,11 @@ export const apiService = {
     const token = await this.getToken();
     const res = await fetch(`${BASE_URL}/journal`, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
-    const data = await res.json();
+    const data = await parseJsonSafe(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Failed to fetch journal entries');
     }
@@ -117,12 +139,12 @@ export const apiService = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify(data),
     });
 
-    const resData = await res.json();
+    const resData = await parseJsonSafe(res);
     if (!res.ok || !resData.success) {
       throw new Error(resData.message || 'Failed to save journal entry');
     }
@@ -134,11 +156,11 @@ export const apiService = {
     const res = await fetch(`${BASE_URL}/journal/${entryId}`, {
       method: 'DELETE',
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
-    const data = await res.json();
+    const data = await parseJsonSafe(res);
     if (!res.ok || !data.success) {
       throw new Error(data.message || 'Failed to delete journal entry');
     }
@@ -165,35 +187,51 @@ export const apiService = {
       }
 
       let seenBytes = 0;
+      let sseBuffer = '';
 
-      xhr.onprogress = () => {
-        const newData = xhr.responseText.substring(seenBytes);
-        seenBytes = xhr.responseText.length;
+      const processBuffer = (flushAll = false) => {
+        const lines = sseBuffer.split('\n');
+        sseBuffer = flushAll ? '' : lines.pop() || '';
 
-        const lines = newData.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const payload = line.replace('data: ', '').trim();
-            if (payload === '[DONE]') {
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line.startsWith('data: ')) continue;
+
+          const payload = line.slice(6).trim();
+          if (!payload || payload === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.error) {
+              reject(new Error(parsed.error));
               return;
             }
-            try {
-              const parsed = JSON.parse(payload);
-              if (parsed.error) {
-                reject(new Error(parsed.error));
-                return;
-              }
-              if (parsed.text) {
-                onChunk(parsed.text);
-              }
-            } catch {
-              // Ignore incomplete JSON fragments until next progress event
+            if (parsed.text) {
+              onChunk(parsed.text);
+            }
+          } catch {
+            // Re-buffer incomplete JSON payload if not flushing
+            if (!flushAll) {
+              sseBuffer = `${rawLine}\n${sseBuffer}`;
             }
           }
         }
       };
 
+      xhr.onprogress = () => {
+        const newData = xhr.responseText.substring(seenBytes);
+        seenBytes = xhr.responseText.length;
+        sseBuffer += newData;
+        processBuffer(false);
+      };
+
       xhr.onload = () => {
+        const remaining = xhr.responseText.substring(seenBytes);
+        if (remaining) {
+          sseBuffer += remaining;
+        }
+        processBuffer(true);
+
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve();
         } else {

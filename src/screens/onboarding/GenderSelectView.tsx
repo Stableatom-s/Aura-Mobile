@@ -36,17 +36,27 @@ const GENDER_LIST: GenderOption[] = [
 
 interface GenderSelectViewProps {
   onBack?: () => void;
-  onComplete: (gender: string) => void;
+  onComplete: (gender: string) => Promise<void> | void;
 }
 
 export function GenderSelectView({ onComplete }: GenderSelectViewProps) {
   const [selectedGender, setSelectedGender] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { colors, fonts, accentColor } = useAppTheme();
+
+  const handleComplete = async () => {
+    if (!selectedGender || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await onComplete(selectedGender);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
-        {/* Header */}
         <View style={styles.header}>
           <Text
             style={[
@@ -66,7 +76,6 @@ export function GenderSelectView({ onComplete }: GenderSelectViewProps) {
           </Text>
         </View>
 
-        {/* 2-Column Gender Grid */}
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.gridContainer}
@@ -116,21 +125,22 @@ export function GenderSelectView({ onComplete }: GenderSelectViewProps) {
           })}
         </ScrollView>
 
-        {/* Bottom CTA */}
         <View style={styles.footer}>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => onComplete(selectedGender)}
+            disabled={!selectedGender || isSubmitting}
+            onPress={handleComplete}
             style={[
               styles.ctaButton,
               {
                 backgroundColor: accentColor,
                 shadowColor: accentColor,
+                opacity: !selectedGender || isSubmitting ? 0.45 : 1,
               },
             ]}
           >
             <Text style={[styles.ctaButtonText, { fontSize: fonts.body }]}>
-              Get Started →
+              {isSubmitting ? 'Setting up...' : 'Get Started →'}
             </Text>
           </TouchableOpacity>
         </View>

@@ -35,7 +35,7 @@ export interface DateOfBirthPayload {
 
 interface NameSetupViewProps {
   onBack?: () => void;
-  onNext: (name: string, birthdayObj?: DateOfBirthPayload) => void;
+  onNext: (name: string, birthdayObj?: DateOfBirthPayload) => Promise<void> | void;
   initialName?: string;
   authProvider?: 'google' | 'apple' | 'guest';
 }
@@ -53,6 +53,7 @@ export function NameSetupView({
   const [selectedYear, setSelectedYear] = useState(2000);
   const [hasSelectedBirthday, setHasSelectedBirthday] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [tempMonth, setTempMonth] = useState(selectedMonth);
   const [tempDay, setTempDay] = useState(selectedDay);
@@ -86,6 +87,8 @@ export function NameSetupView({
   };
 
   const formattedDate = `${MONTHS[selectedMonth]} ${selectedDay}, ${selectedYear}`;
+  const trimmedName = displayName.trim();
+  const isValid = trimmedName.length > 0;
 
   const handleConfirmDate = () => {
     setSelectedMonth(tempMonth);
@@ -95,14 +98,21 @@ export function NameSetupView({
     setShowDatePicker(false);
   };
 
-  const handleContinue = () => {
-    const trimmed = displayName.trim() || initialName;
-    const bdayObj: DateOfBirthPayload = {
-      month: MONTHS[selectedMonth],
-      day: selectedDay,
-      year: selectedYear,
-    };
-    onNext(trimmed, bdayObj);
+  const handleContinue = async () => {
+    if (!isValid || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const bdayObj: DateOfBirthPayload | undefined = hasSelectedBirthday
+        ? {
+            month: MONTHS[selectedMonth],
+            day: selectedDay,
+            year: selectedYear,
+          }
+        : undefined;
+      await onNext(trimmedName, bdayObj);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -112,7 +122,6 @@ export function NameSetupView({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.topContent}>
-          {/* Top Dynamic Auth Provider Badge */}
           <View
             style={[
               styles.avatarBadge,
@@ -128,7 +137,6 @@ export function NameSetupView({
             )}
           </View>
 
-          {/* Heading and Description */}
           <Text
             style={[
               styles.title,
@@ -150,7 +158,6 @@ export function NameSetupView({
                 : 'Feel free to choose how you want to be called.'}
           </Text>
 
-          {/* Display Name Input */}
           <View style={styles.inputGroup}>
             <Text
               style={[
@@ -188,7 +195,6 @@ export function NameSetupView({
             </Text>
           </View>
 
-          {/* Date of Birth Input Trigger */}
           <View style={[styles.inputGroup, { marginTop: 24 }]}>
             <Text
               style={[
@@ -234,7 +240,6 @@ export function NameSetupView({
           </View>
         </View>
 
-        {/* Bottom Continue Button */}
         <View style={styles.bottomArea}>
           <TouchableOpacity
             style={[
@@ -242,19 +247,20 @@ export function NameSetupView({
               {
                 backgroundColor: accentColor,
                 shadowColor: accentColor,
+                opacity: !isValid || isSubmitting ? 0.45 : 1,
               },
             ]}
             onPress={handleContinue}
+            disabled={!isValid || isSubmitting}
             activeOpacity={0.85}
           >
             <Text style={[styles.continueText, { fontSize: fonts.body }]}>
-              Continue →
+              {isSubmitting ? 'Saving...' : 'Continue →'}
             </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
 
-      {/* 3-Column Drum Wheel Picker Bottom Sheet Modal */}
       <Modal
         visible={showDatePicker}
         transparent={true}
@@ -316,7 +322,6 @@ export function NameSetupView({
                 pointerEvents="none"
               />
 
-              {/* Month */}
               <ScrollView
                 ref={monthScrollRef}
                 style={styles.wheelColumn}
@@ -343,7 +348,6 @@ export function NameSetupView({
                 <View style={{ height: ITEM_HEIGHT * 2 }} />
               </ScrollView>
 
-              {/* Day */}
               <ScrollView
                 ref={dayScrollRef}
                 style={[styles.wheelColumn, { flex: 0.6 }]}
@@ -370,7 +374,6 @@ export function NameSetupView({
                 <View style={{ height: ITEM_HEIGHT * 2 }} />
               </ScrollView>
 
-              {/* Year */}
               <ScrollView
                 ref={yearScrollRef}
                 style={styles.wheelColumn}
